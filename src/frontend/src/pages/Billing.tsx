@@ -82,7 +82,10 @@ function InvoiceDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-6 space-y-6 bg-white text-gray-900">
+        <div
+          id="invoice-print"
+          className="p-6 space-y-6 bg-white text-gray-900"
+        >
           {/* Header */}
           <div className="flex items-start justify-between border-b-2 border-blue-900 pb-4">
             <div className="flex items-center gap-3">

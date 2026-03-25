@@ -56,15 +56,32 @@
 }
 
 @media print {
+  /* Hide everything on the page */
+  body * {
+    visibility: hidden;
+  }
+  /* Show only the printable report or invoice */
+  #report-print,
+  #report-print *,
+  #invoice-print,
+  #invoice-print * {
+    visibility: visible;
+  }
+  /* Position printable content at top-left */
+  #report-print,
+  #invoice-print {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    z-index: 9999;
+  }
   .no-print {
     display: none !important;
   }
   .print-only {
     display: block !important;
-  }
-  body {
-    background: white;
-    color: black;
   }
 }
 
