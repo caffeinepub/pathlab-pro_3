@@ -13,11 +13,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Printer, Search } from "lucide-react";
 import { useState } from "react";
 import type { PatientRecord, TestReport } from "../backend.d";
-import type { ReportId } from "../backend.d";
 import {
   usePatientReports,
   usePatients,
-  useSignature,
   useTestCatalog,
 } from "../hooks/useQueries";
 import { LAB_INFO } from "../lib/constants";
@@ -25,8 +23,8 @@ import { LAB_INFO } from "../lib/constants";
 type ReportRow = {
   patient: PatientRecord;
   report: TestReport;
-  reportId: ReportId;
   patientIdx: number;
+  reportIdx: number;
 };
 
 function ReportViewDialog({
@@ -35,7 +33,6 @@ function ReportViewDialog({
   onClose,
 }: { row: ReportRow | null; open: boolean; onClose: () => void }) {
   const { data: catalog } = useTestCatalog();
-  const { data: signatureUrl } = useSignature(row ? row.reportId : null);
 
   if (!row) return null;
   const { patient, report } = row;
@@ -47,7 +44,38 @@ function ReportViewDialog({
     year: "numeric",
   });
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const printContent = document.getElementById("report-print")?.innerHTML;
+    if (!printContent) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><title>Test Report - ${patient.patient.name}</title><style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+      .header { display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a5f; padding-bottom: 16px; margin-bottom: 16px; }
+      .header-left { display: flex; align-items: center; gap: 12px; }
+      .logo { width: 56px; height: 56px; }
+      .lab-name { font-size: 1.2rem; font-weight: bold; color: #1e3a5f; }
+      .lab-sub { font-size: 0.75rem; color: #555; }
+      .header-right { text-align: right; }
+      .patient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #eff6ff; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+      .label { font-size: 0.7rem; text-transform: uppercase; font-weight: 600; color: #888; }
+      .value { font-weight: 600; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-bottom: 16px; }
+      th { background: #1e3a5f; color: white; text-align: left; padding: 8px 12px; }
+      td { padding: 8px 12px; border: 1px solid #e5e7eb; }
+      tr:nth-child(even) td { background: #f9fafb; }
+      .notes { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px; font-size: 0.875rem; margin-bottom: 16px; }
+      .footer { text-align: center; font-size: 0.75rem; color: #aaa; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+      .sign-area { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+      .sign-box { text-align: center; border-top: 1px solid #999; padding-top: 4px; font-size: 0.75rem; color: #555; min-width: 160px; }
+    </style></head><body>${printContent}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => {
+      win.print();
+      win.close();
+    }, 500);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -55,7 +83,7 @@ function ReportViewDialog({
         className="max-w-3xl max-h-[90vh] overflow-y-auto"
         data-ocid="reports.dialog"
       >
-        <DialogHeader className="no-print">
+        <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Test Report</span>
             <Button
@@ -73,26 +101,28 @@ function ReportViewDialog({
         {/* Printable Report */}
         <div id="report-print" className="p-6 space-y-6 bg-white text-gray-900">
           {/* Header */}
-          <div className="flex items-start justify-between border-b-2 border-blue-900 pb-4">
-            <div className="flex items-center gap-3">
+          <div className="header flex items-start justify-between border-b-2 border-blue-900 pb-4">
+            <div className="header-left flex items-center gap-3">
               <img
                 src="/assets/generated/pathlab-logo-transparent.dim_120x120.png"
                 alt="Logo"
-                className="h-14 w-14"
+                className="logo h-14 w-14"
               />
               <div>
-                <h1 className="text-xl font-bold text-blue-900">
+                <p className="lab-name text-xl font-bold text-blue-900">
                   {LAB_INFO.name}
-                </h1>
-                <p className="text-xs text-gray-600">{LAB_INFO.address}</p>
-                <p className="text-xs text-gray-600">
+                </p>
+                <p className="lab-sub text-xs text-gray-600">
+                  {LAB_INFO.address}
+                </p>
+                <p className="lab-sub text-xs text-gray-600">
                   {LAB_INFO.phone} | GST: {LAB_INFO.gstNo}
                 </p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="header-right text-right">
               <p className="text-sm font-semibold">
-                Report ID: #{row.reportId.toString()}
+                Report #{row.reportIdx + 1}
               </p>
               <p className="text-sm">Date: {reportDate}</p>
               <Badge
@@ -108,32 +138,32 @@ function ReportViewDialog({
           </div>
 
           {/* Patient Info */}
-          <div className="grid grid-cols-2 gap-4 bg-blue-50 rounded-lg p-4">
+          <div className="patient-grid grid grid-cols-2 gap-4 bg-blue-50 rounded-lg p-4">
             <div>
-              <p className="text-xs text-gray-500 uppercase font-semibold">
+              <p className="label text-xs text-gray-500 uppercase font-semibold">
                 Patient Name
               </p>
-              <p className="font-semibold">{patient.patient.name}</p>
+              <p className="value font-semibold">{patient.patient.name}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase font-semibold">
+              <p className="label text-xs text-gray-500 uppercase font-semibold">
                 Age / Gender
               </p>
-              <p>
+              <p className="value">
                 {Number(patient.patient.age)} yrs / {patient.patient.gender}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase font-semibold">
+              <p className="label text-xs text-gray-500 uppercase font-semibold">
                 Phone
               </p>
-              <p>{patient.patient.phone}</p>
+              <p className="value">{patient.patient.phone}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase font-semibold">
+              <p className="label text-xs text-gray-500 uppercase font-semibold">
                 Referring Doctor
               </p>
-              <p>{report.doctorName || "—"}</p>
+              <p className="value">{report.doctorName || "—"}</p>
             </div>
           </div>
 
@@ -180,25 +210,18 @@ function ReportViewDialog({
           {/* Notes */}
           {report.notes && (
             <div>
-              <p className="text-xs text-gray-500 uppercase font-semibold">
+              <p className="label text-xs text-gray-500 uppercase font-semibold">
                 Clinical Notes
               </p>
-              <p className="text-sm mt-1 bg-gray-50 p-3 rounded border">
+              <p className="notes text-sm mt-1 bg-gray-50 p-3 rounded border">
                 {report.notes}
               </p>
             </div>
           )}
 
-          {/* Signature */}
-          <div className="flex justify-end">
-            <div className="text-center">
-              {signatureUrl && (
-                <img
-                  src={signatureUrl}
-                  alt="Doctor Signature"
-                  className="h-16 mx-auto mb-1"
-                />
-              )}
+          {/* Signature area */}
+          <div className="sign-area flex justify-end">
+            <div className="sign-box text-center">
               <div className="border-t border-gray-400 pt-1 text-xs text-gray-600">
                 {report.doctorName || "Authorized Signatory"}
               </div>
@@ -206,7 +229,7 @@ function ReportViewDialog({
           </div>
 
           {/* Footer */}
-          <div className="text-center text-xs text-gray-400 border-t pt-3">
+          <div className="footer text-center text-xs text-gray-400 border-t pt-3">
             This report is computer generated. For queries, contact{" "}
             {LAB_INFO.phone}
           </div>
@@ -425,8 +448,8 @@ function PatientReportRowInner({
                         onViewReport({
                           patient: record,
                           report,
-                          reportId: BigInt(rIdx),
                           patientIdx: idx,
+                          reportIdx: rIdx,
                         })
                       }
                       data-ocid={`reports.edit_button.${rIdx + 1}`}

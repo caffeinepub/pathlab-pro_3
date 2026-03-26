@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -18,8 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, Clock, Printer, Receipt } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { CheckCircle, Clock, Loader2, Printer, Receipt } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PaymentStatus } from "../backend";
@@ -27,6 +25,8 @@ import type { Bill } from "../backend.d";
 import {
   useBills,
   useCreateBill,
+  usePatientReports,
+  usePatients,
   useTestCatalog,
   useUpdatePaymentStatus,
 } from "../hooks/useQueries";
@@ -43,8 +43,6 @@ function InvoiceDialog({
   onClose: () => void;
   patientName: string;
 }) {
-  const { data: catalog } = useTestCatalog();
-
   if (!bill) return null;
 
   const subtotal = Number(bill.totalAmount) - Number(bill.gstAmount);
@@ -58,8 +56,38 @@ function InvoiceDialog({
     year: "numeric",
   });
 
-  // catalog is available for future test detail lookup
-  void catalog;
+  const handlePrint = () => {
+    const printContent = document.getElementById("invoice-print")?.innerHTML;
+    if (!printContent) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><title>Invoice - ${patientName}</title><style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+      .header { display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a5f; padding-bottom: 16px; margin-bottom: 16px; }
+      .header-left { display: flex; align-items: center; gap: 12px; }
+      .logo { width: 56px; height: 56px; }
+      .lab-name { font-size: 1.2rem; font-weight: bold; color: #1e3a5f; }
+      .lab-sub { font-size: 0.75rem; color: #555; }
+      .header-right { text-align: right; }
+      .bill-to { background: #eff6ff; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+      .label { font-size: 0.7rem; text-transform: uppercase; font-weight: 600; color: #888; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-bottom: 16px; }
+      th { background: #1e3a5f; color: white; text-align: left; padding: 8px 12px; }
+      th:last-child, td:last-child { text-align: right; }
+      td { padding: 8px 12px; border: 1px solid #e5e7eb; }
+      tr:nth-child(even) td { background: #f9fafb; }
+      .totals { float: right; width: 240px; font-size: 0.875rem; }
+      .totals div { display: flex; justify-content: space-between; margin-bottom: 4px; }
+      .grand-total { font-weight: bold; font-size: 1rem; color: #1e3a5f; border-top: 1px solid #ccc; padding-top: 8px; margin-top: 4px; }
+      .footer { clear: both; text-align: center; font-size: 0.75rem; color: #aaa; border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 24px; }
+    </style></head><body>${printContent}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => {
+      win.print();
+      win.close();
+    }, 500);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -67,12 +95,12 @@ function InvoiceDialog({
         className="max-w-2xl max-h-[90vh] overflow-y-auto"
         data-ocid="billing.dialog"
       >
-        <DialogHeader className="no-print">
+        <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>GST Invoice</span>
             <Button
               size="sm"
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="mr-6"
               data-ocid="billing.primary_button"
             >
@@ -87,25 +115,29 @@ function InvoiceDialog({
           className="p-6 space-y-6 bg-white text-gray-900"
         >
           {/* Header */}
-          <div className="flex items-start justify-between border-b-2 border-blue-900 pb-4">
-            <div className="flex items-center gap-3">
+          <div className="header flex items-start justify-between border-b-2 border-blue-900 pb-4">
+            <div className="header-left flex items-center gap-3">
               <img
                 src="/assets/generated/pathlab-logo-transparent.dim_120x120.png"
                 alt="Logo"
-                className="h-14 w-14"
+                className="logo h-14 w-14"
               />
               <div>
-                <h1 className="text-xl font-bold text-blue-900">
+                <p className="lab-name text-xl font-bold text-blue-900">
                   {LAB_INFO.name}
-                </h1>
-                <p className="text-xs text-gray-600">{LAB_INFO.address}</p>
-                <p className="text-xs text-gray-600">
+                </p>
+                <p className="lab-sub text-xs text-gray-600">
+                  {LAB_INFO.address}
+                </p>
+                <p className="lab-sub text-xs text-gray-600">
                   GST No: {LAB_INFO.gstNo}
                 </p>
-                <p className="text-xs text-gray-600">{LAB_INFO.phone}</p>
+                <p className="lab-sub text-xs text-gray-600">
+                  {LAB_INFO.phone}
+                </p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="header-right text-right">
               <p className="text-lg font-bold text-blue-900">TAX INVOICE</p>
               <p className="text-sm">
                 Invoice #: INV-{bill.reportId.toString().padStart(6, "0")}
@@ -124,8 +156,8 @@ function InvoiceDialog({
           </div>
 
           {/* Bill To */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
+          <div className="bill-to bg-blue-50 rounded-lg p-4">
+            <p className="label text-xs text-gray-500 uppercase font-semibold mb-1">
               Bill To
             </p>
             <p className="font-semibold">{patientName}</p>
@@ -168,7 +200,7 @@ function InvoiceDialog({
           </div>
 
           {/* Totals */}
-          <div className="flex justify-end">
+          <div className="totals flex justify-end">
             <div className="w-64 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
@@ -187,7 +219,7 @@ function InvoiceDialog({
                 <span>₹{sgst.toFixed(2)}</span>
               </div>
               <Separator />
-              <div className="flex justify-between font-bold text-base">
+              <div className="grand-total flex justify-between font-bold text-base">
                 <span>Grand Total</span>
                 <span className="text-blue-900">
                   ₹{Number(bill.totalAmount).toFixed(2)}
@@ -202,7 +234,7 @@ function InvoiceDialog({
           </div>
 
           {/* Footer */}
-          <div className="text-center text-xs text-gray-400 border-t pt-3">
+          <div className="footer text-center text-xs text-gray-400 border-t pt-3">
             Thank you for choosing {LAB_INFO.name}. This is a computer-generated
             invoice.
           </div>
@@ -219,118 +251,213 @@ function CreateBillDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { data: patients } = usePatients();
   const { data: catalog } = useTestCatalog();
   const createBill = useCreateBill();
-  const [reportIdStr, setReportIdStr] = useState("");
-  const [selectedTests, setSelectedTests] = useState<string[]>([]);
 
-  const toggleTest = (code: string) => {
-    setSelectedTests((p) =>
-      p.includes(code) ? p.filter((c) => c !== code) : [...p, code],
-    );
-  };
+  const [patientIdx, setPatientIdx] = useState("");
+  const [reportIdx, setReportIdx] = useState("");
 
-  const subtotal = (catalog ?? [])
-    .filter((t) => selectedTests.includes(t.code))
-    .reduce((s, t) => s + Number(t.price), 0);
+  // Load reports for selected patient
+  const { data: patientReports, isLoading: reportsLoading } = usePatientReports(
+    patientIdx !== "" ? BigInt(patientIdx) : null,
+  );
+
+  const selectedReport =
+    reportIdx !== "" && patientReports
+      ? patientReports[Number(reportIdx)]
+      : null;
+
+  // Auto-derive line items from report tests
+  const lineItems =
+    selectedReport && catalog
+      ? selectedReport.tests
+          .map((code) => catalog.find((t) => t.code === code))
+          .filter((t): t is NonNullable<typeof t> => !!t)
+      : [];
+
+  const subtotal = lineItems.reduce((s, t) => s + Number(t.price), 0);
   const gstAmt = subtotal * GST_RATE;
   const total = subtotal + gstAmt;
 
   const handleCreate = async () => {
-    if (!reportIdStr) {
-      toast.error("Enter report ID");
+    if (patientIdx === "") {
+      toast.error("Please select a patient");
       return;
     }
-    if (selectedTests.length === 0) {
-      toast.error("Select at least one test");
+    if (reportIdx === "") {
+      toast.error("Please select a report");
       return;
     }
-    const lineItems = (catalog ?? [])
-      .filter((t) => selectedTests.includes(t.code))
-      .map((t) => ({
-        testName: t.name,
-        price: t.price,
-      }));
+    if (lineItems.length === 0) {
+      toast.error("The selected report has no tests in the catalog");
+      return;
+    }
+
+    // reportId = array index of this report in patient's reports (as bigint)
+    const reportId = BigInt(reportIdx);
+
     try {
       await createBill.mutateAsync({
-        reportId: BigInt(reportIdStr),
-        lineItems,
+        reportId,
+        lineItems: lineItems.map((t) => ({
+          testName: t.name,
+          price: t.price,
+        })),
       });
-      toast.success("Bill created!");
+      toast.success("Bill created successfully!");
       onClose();
-      setReportIdStr("");
-      setSelectedTests([]);
+      setPatientIdx("");
+      setReportIdx("");
     } catch {
       toast.error("Failed to create bill.");
     }
   };
 
+  const handleClose = () => {
+    onClose();
+    setPatientIdx("");
+    setReportIdx("");
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg" data-ocid="billing.modal">
         <DialogHeader>
           <DialogTitle>Create New Bill</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
+          {/* Step 1: Select Patient */}
           <div className="space-y-1.5">
-            <Label htmlFor="bill-report-id">Report ID *</Label>
-            <Input
-              id="bill-report-id"
-              placeholder="Enter Report ID (number)"
-              value={reportIdStr}
-              onChange={(e) => setReportIdStr(e.target.value)}
-              type="number"
-              data-ocid="billing.input"
-            />
+            <Label>Patient *</Label>
+            <Select
+              value={patientIdx}
+              onValueChange={(v) => {
+                setPatientIdx(v);
+                setReportIdx("");
+              }}
+            >
+              <SelectTrigger data-ocid="billing.select">
+                <SelectValue placeholder="Select patient..." />
+              </SelectTrigger>
+              <SelectContent>
+                {(patients ?? []).map((r, i) => (
+                  <SelectItem
+                    key={`${r.patient.phone}-${r.createdAt}`}
+                    value={String(i)}
+                  >
+                    {r.patient.name} — {r.patient.phone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Select Tests *</p>
-            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-              {(catalog ?? []).map((test) => (
-                <label
-                  key={test.code}
-                  htmlFor={`bill-test-${test.code}`}
-                  className={`flex items-center gap-2 p-2 rounded border cursor-pointer text-xs ${
-                    selectedTests.includes(test.code)
-                      ? "border-primary bg-primary/5"
-                      : "border-border"
-                  }`}
-                >
-                  <input
-                    id={`bill-test-${test.code}`}
-                    type="checkbox"
-                    checked={selectedTests.includes(test.code)}
-                    onChange={() => toggleTest(test.code)}
-                  />
-                  <span>{test.name}</span>
-                  <span className="ml-auto text-muted-foreground">
-                    ₹{Number(test.price)}
-                  </span>
-                </label>
-              ))}
+
+          {/* Step 2: Select Report */}
+          {patientIdx !== "" && (
+            <div className="space-y-1.5">
+              <Label>Report *</Label>
+              {reportsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <Select value={reportIdx} onValueChange={setReportIdx}>
+                  <SelectTrigger data-ocid="billing.input">
+                    <SelectValue placeholder="Select report..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(patientReports ?? []).length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        No reports found
+                      </SelectItem>
+                    ) : (
+                      (patientReports ?? []).map((rep, i) => {
+                        const date = new Date(
+                          Number(rep.createdAt) / 1_000_000,
+                        ).toLocaleDateString("en-IN");
+                        return (
+                          <SelectItem
+                            key={String(rep.createdAt)}
+                            value={String(i)}
+                          >
+                            #{i + 1} — {rep.tests.slice(0, 3).join(", ")}
+                            {rep.tests.length > 3 ? "..." : ""} ({date})
+                          </SelectItem>
+                        );
+                      })
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
-          </div>
-          {selectedTests.length > 0 && (
-            <div className="bg-muted/30 rounded-lg p-3 text-sm space-y-1">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>₹{subtotal.toFixed(2)}</span>
+          )}
+
+          {/* Step 3: Preview line items */}
+          {selectedReport && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Tests from Report</p>
+              <div className="border border-border rounded-lg overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-left py-2 px-3">Test</th>
+                      <th className="text-right py-2 px-3">Price (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lineItems.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={2}
+                          className="py-3 px-3 text-center text-muted-foreground"
+                        >
+                          No tests found in catalog for this report
+                        </td>
+                      </tr>
+                    ) : (
+                      lineItems.map((t) => (
+                        <tr key={t.code} className="border-t border-border/50">
+                          <td className="py-2 px-3">{t.name}</td>
+                          <td className="py-2 px-3 text-right">
+                            {Number(t.price).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex justify-between">
-                <span>GST 18%</span>
-                <span>₹{gstAmt.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-bold">
-                <span>Total</span>
-                <span>₹{total.toFixed(2)}</span>
+
+              <div className="bg-muted/30 rounded-lg p-3 text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>₹{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    CGST {(CGST_RATE * 100).toFixed(0)}%
+                  </span>
+                  <span>₹{(subtotal * CGST_RATE).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    SGST {(SGST_RATE * 100).toFixed(0)}%
+                  </span>
+                  <span>₹{(subtotal * SGST_RATE).toFixed(2)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-bold">
+                  <span>Total</span>
+                  <span className="text-primary">₹{total.toFixed(2)}</span>
+                </div>
               </div>
             </div>
           )}
+
           <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
-              onClick={onClose}
+              onClick={handleClose}
               data-ocid="billing.cancel_button"
             >
               Cancel
@@ -338,7 +465,11 @@ function CreateBillDialog({
             <Button
               type="button"
               onClick={handleCreate}
-              disabled={createBill.isPending}
+              disabled={
+                createBill.isPending ||
+                !selectedReport ||
+                lineItems.length === 0
+              }
               data-ocid="billing.confirm_button"
             >
               {createBill.isPending && (
@@ -355,17 +486,22 @@ function CreateBillDialog({
 
 export default function Billing() {
   const { data: bills, isLoading } = useBills();
+  const { data: patients } = usePatients();
   const updateStatus = useUpdatePaymentStatus();
   const [viewBill, setViewBill] = useState<Bill | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const getPatientName = (reportId: bigint) => {
-    return `Report #${reportId.toString()}`;
+  const getPatientName = (_reportId: bigint) => {
+    // Bills don't carry patientId — best effort
+    return `Report #${_reportId.toString()}`;
   };
 
-  const handleStatusUpdate = async (billId: bigint, status: PaymentStatus) => {
+  // Suppress unused warning
+  void patients;
+
+  const handleStatusUpdate = async (billIdx: number, status: PaymentStatus) => {
     try {
-      await updateStatus.mutateAsync({ billId, status });
+      await updateStatus.mutateAsync({ billId: BigInt(billIdx), status });
       toast.success("Payment status updated!");
     } catch {
       toast.error("Failed to update status.");
@@ -493,10 +629,7 @@ export default function Billing() {
                           {bill.paymentStatus !== PaymentStatus.paid && (
                             <Select
                               onValueChange={(v) =>
-                                handleStatusUpdate(
-                                  bill.reportId,
-                                  v as PaymentStatus,
-                                )
+                                handleStatusUpdate(idx, v as PaymentStatus)
                               }
                             >
                               <SelectTrigger

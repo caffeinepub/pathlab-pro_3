@@ -1,23 +1,24 @@
 # PathLab Pro
 
 ## Current State
-Test Catalog page mein Code, Test Name, Sample Type, Unit, Price columns hain. Reference Range field form mein hai (add karte waqt) lekin table mein show nahi hota. Normal range edit karne ka koi tarika nahi hai.
+App has Motoko backend with all APIs working. Frontend has 6 pages. Reported issues: PDF print not working, bill creation confusing, reports not opening.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Test Catalog table mein "Normal Range" column add karo
-- Reference Range ke liye inline edit functionality (Price jaise)
-- `useUpdateTestRange` hook jo `addTestCatalog` upsert use kare
+- Proper print for reports/invoices
 
 ### Modify
-- TestCatalog.tsx: table mein Normal Range column dikhao, inline edit enable karo
-- useQueries.ts: `useUpdateTestRange` hook add karo
+- Reports.tsx: fix patientId in usePatientReports, fix reportId for signature
+- Billing.tsx: better CreateBill flow with patient+report dropdowns
+- NewReport.tsx: post-submit option to go to billing
+- index.css: fix print styles
 
 ### Remove
-- Kuch nahi
+- Nothing
 
 ## Implementation Plan
-1. useQueries.ts mein `useUpdateTestRange` hook add karo (addTestCatalog upsert use kare with full test data)
-2. TestCatalog.tsx mein Normal Range column add karo table mein
-3. Price edit jaise inline edit for Normal Range implement karo
+1. Fix Reports.tsx
+2. Fix Billing.tsx
+3. Fix index.css print styles
+4. Fix NewReport.tsx

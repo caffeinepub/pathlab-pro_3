@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Receipt } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import type { TestResult } from "../backend.d";
@@ -40,6 +40,7 @@ export default function NewReport() {
   const [results, setResults] = useState<Record<string, string>>({});
   const [signatureDataUrl, setSignatureDataUrl] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [createdReportId, setCreatedReportId] = useState<bigint | null>(null);
 
   const toggleTest = (code: string) => {
     setSelectedTests((prev) =>
@@ -100,6 +101,7 @@ export default function NewReport() {
       ]);
 
       toast.success("Report created successfully!");
+      setCreatedReportId(reportId);
       setSubmitted(true);
     } catch {
       toast.error("Failed to create report.");
@@ -114,6 +116,7 @@ export default function NewReport() {
     setResults({});
     setSignatureDataUrl("");
     setSubmitted(false);
+    setCreatedReportId(null);
   };
 
   if (submitted) {
@@ -127,6 +130,24 @@ export default function NewReport() {
         <p className="text-muted-foreground">
           The test report has been saved successfully.
         </p>
+        {createdReportId !== null && (
+          <div className="flex flex-col items-center gap-3 mt-2">
+            <div className="bg-muted/50 border border-border rounded-lg px-6 py-3 text-center">
+              <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">
+                Report ID
+              </p>
+              <p className="text-2xl font-bold text-primary font-mono">
+                #{createdReportId.toString()}
+              </p>
+            </div>
+            <a href="/billing">
+              <Button variant="outline" data-ocid="newreport.secondary_button">
+                <Receipt className="h-4 w-4 mr-2" />
+                Go to Billing
+              </Button>
+            </a>
+          </div>
+        )}
         <Button onClick={resetForm} data-ocid="newreport.primary_button">
           Create Another Report
         </Button>
@@ -164,10 +185,10 @@ export default function NewReport() {
                   <SelectValue placeholder="Select patient..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {(patients ?? []).map((r) => (
+                  {(patients ?? []).map((r, i) => (
                     <SelectItem
                       key={`${r.patient.phone}-${r.createdAt}`}
-                      value={String(r.createdAt)}
+                      value={String(i)}
                     >
                       {r.patient.name} — {r.patient.phone}
                     </SelectItem>
