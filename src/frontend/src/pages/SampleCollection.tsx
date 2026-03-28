@@ -248,10 +248,26 @@ export default function SampleCollection() {
     setAutoFilled(false);
     setSelectedTests([]);
     setSelectedType("");
-    if (value) {
-      setSelectedPatientId(BigInt(Number(value) + 1));
-    } else {
-      setSelectedPatientId(null);
+    setSelectedPatientId(null);
+
+    // Auto-fill from localStorage (stored during patient registration)
+    const patient = (patientRecords ?? []).find(
+      (_p, idx) => String(idx) === value,
+    );
+    if (patient) {
+      const stored = localStorage.getItem(
+        `patientTests_${patient.patient.phone}`,
+      );
+      if (stored) {
+        try {
+          const { tests, sampleType } = JSON.parse(stored);
+          if (tests && tests.length > 0) {
+            setSelectedTests(tests);
+            setSelectedType(sampleType || "");
+            setAutoFilled(true);
+          }
+        } catch {}
+      }
     }
   };
 

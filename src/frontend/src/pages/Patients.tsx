@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
   CheckCircle2,
@@ -45,6 +46,7 @@ import {
   usePatients,
   useTestCatalog,
 } from "../hooks/useQueries";
+import { SAMPLE_TEST_CATALOG } from "../lib/constants";
 
 // ─── Patient History Dialog ───────────────────────────────────────────────────
 
@@ -264,6 +266,7 @@ export default function Patients() {
   const createReport = useCreateTestReport();
   const { actor, isFetching: isActorLoading } = useActor();
   const { login, identity } = useInternetIdentity();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedPatientIdx, setSelectedPatientIdx] = useState<number | null>(
@@ -337,6 +340,15 @@ export default function Patients() {
             notes: "",
             doctorName: form.doctorName,
           });
+          // Store assigned tests in localStorage for SampleCollection auto-fill
+          const firstTest = SAMPLE_TEST_CATALOG.find(
+            (t) => t.code === form.selectedTests[0],
+          );
+          const sampleType = firstTest?.sampleType || "";
+          localStorage.setItem(
+            `patientTests_${form.phone}`,
+            JSON.stringify({ tests: form.selectedTests, sampleType }),
+          );
           toast.success(
             `Patient registered! Lab ID: ${labId} — ${form.selectedTests.length} test(s) assigned.`,
           );
@@ -458,7 +470,7 @@ export default function Patients() {
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-2 flex-wrap justify-center">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -467,6 +479,17 @@ export default function Patients() {
                       }}
                     >
                       Add Another Patient
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setOpen(false);
+                        resetForm();
+                        navigate({ to: "/results" });
+                      }}
+                      data-ocid="patients.secondary_button"
+                    >
+                      Enter Results
                     </Button>
                     <Button
                       onClick={() => {

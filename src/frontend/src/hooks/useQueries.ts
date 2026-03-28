@@ -51,6 +51,7 @@ export function useTestCatalog() {
   const { actor } = useActor();
   return useQuery({
     queryKey: ["testCatalog"],
+    initialData: SAMPLE_TEST_CATALOG,
     queryFn: async () => {
       if (!actor) return SAMPLE_TEST_CATALOG;
       try {

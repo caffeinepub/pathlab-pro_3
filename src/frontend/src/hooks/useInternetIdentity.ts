@@ -14,7 +14,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { loadConfig } from "../config";
@@ -150,12 +149,6 @@ export function InternetIdentityProvider({
    */
   createOptions?: AuthClientCreateOptions;
 }>) {
-  const authClientRef = useRef<AuthClient | undefined>(undefined);
-  // Store createOptions in a ref so the init effect can read the latest value
-  // without it being a reactive dependency (prevents re-initialization loops).
-  const createOptionsRef = useRef(createOptions);
-  createOptionsRef.current = createOptions;
-
   const [authClient, setAuthClient] = useState<AuthClient | undefined>(
     undefined,
   );
@@ -224,7 +217,6 @@ export function InternetIdentityProvider({
       .logout()
       .then(() => {
         setIdentity(undefined);
-        authClientRef.current = undefined;
         setAuthClient(undefined);
         setStatus("idle");
         setError(undefined);
@@ -239,43 +231,38 @@ export function InternetIdentityProvider({
       });
   }, [authClient, setErrorMessage]);
 
-  // Run only once on mount. createOptionsRef is used instead of createOptions
-  // directly to avoid this effect re-running when the options object changes identity.
   useEffect(() => {
-    if (authClientRef.current) return; // Already initialized
     let cancelled = false;
     void (async () => {
       try {
         setStatus("initializing");
-        const client = await createAuthClient(createOptionsRef.current);
-        if (cancelled) return;
-        authClientRef.current = client;
-        setAuthClient(client);
-        const isAuthenticated = await client.isAuthenticated();
+        let existingClient = authClient;
+        if (!existingClient) {
+          existingClient = await createAuthClient(createOptions);
+          if (cancelled) return;
+          setAuthClient(existingClient);
+        }
+        const isAuthenticated = await existingClient.isAuthenticated();
         if (cancelled) return;
         if (isAuthenticated) {
-          setIdentity(client.getIdentity());
-          setStatus("success");
-          return;
+          const loadedIdentity = existingClient.getIdentity();
+          setIdentity(loadedIdentity);
         }
       } catch (unknownError) {
-        if (!cancelled) {
-          setStatus("loginError");
-          setError(
-            unknownError instanceof Error
-              ? unknownError
-              : new Error("Initialization failed"),
-          );
-        }
-        return;
+        setStatus("loginError");
+        setError(
+          unknownError instanceof Error
+            ? unknownError
+            : new Error("Initialization failed"),
+        );
+      } finally {
+        if (!cancelled) setStatus("idle");
       }
-      if (!cancelled) setStatus("idle");
     })();
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - ref is stable, runs only once on mount
+  }, [createOptions, authClient]);
 
   const value = useMemo<ProviderValue>(
     () => ({
