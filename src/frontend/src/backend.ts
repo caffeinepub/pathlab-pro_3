@@ -733,20 +733,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async updateTestReportResult(arg0: ReportId, arg1: Array<TestResult>): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.updateTestReportResult(arg0, arg1);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.updateTestReportResult(arg0, arg1);
-            return result;
-        }
-    }
     async updateTestPrice(arg0: TestCode, arg1: bigint): Promise<void> {
         if (this.processError) {
             try {
@@ -758,6 +744,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.updateTestPrice(arg0, arg1);
+            return result;
+        }
+    }
+    async updateTestReportResult(arg0: ReportId, arg1: Array<TestResult>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateTestReportResult(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateTestReportResult(arg0, arg1);
             return result;
         }
     }

@@ -20,7 +20,11 @@ export function useDashboardStats() {
     queryKey: ["dashboardStats"],
     queryFn: async () => {
       if (!actor) return null;
-      return actor.getDashboardStats();
+      try {
+        return await actor.getDashboardStats();
+      } catch {
+        return null;
+      }
     },
     enabled: !!actor && !isFetching,
   });
@@ -32,7 +36,11 @@ export function usePatients() {
     queryKey: ["patients"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getAllPatientsByCreatedAt();
+      try {
+        return await actor.getAllPatientsByCreatedAt();
+      } catch {
+        return [];
+      }
     },
     enabled: !!actor && !isFetching,
   });
@@ -44,7 +52,11 @@ export function useTestCatalog() {
     queryKey: ["testCatalog"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getAllTestCatalog();
+      try {
+        return await actor.getAllTestCatalog();
+      } catch {
+        return [];
+      }
     },
     enabled: !!actor && !isFetching,
   });
@@ -56,7 +68,11 @@ export function useTestReport(reportId: ReportId | null) {
     queryKey: ["report", reportId?.toString()],
     queryFn: async () => {
       if (!actor || reportId === null) return null;
-      return actor.getTestReport(reportId);
+      try {
+        return await actor.getTestReport(reportId);
+      } catch {
+        return null;
+      }
     },
     enabled: !!actor && !isFetching && reportId !== null,
   });
@@ -68,7 +84,11 @@ export function usePatientReports(patientId: PatientId | null) {
     queryKey: ["patientReports", patientId?.toString()],
     queryFn: async () => {
       if (!actor || patientId === null) return [];
-      return actor.getPatientReportsByCreatedAt(patientId);
+      try {
+        return await actor.getPatientReportsByCreatedAt(patientId);
+      } catch {
+        return [];
+      }
     },
     enabled: !!actor && !isFetching && patientId !== null,
   });
@@ -80,7 +100,11 @@ export function useBills() {
     queryKey: ["bills"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getAllBillsByTimestamp();
+      try {
+        return await actor.getAllBillsByTimestamp();
+      } catch {
+        return [];
+      }
     },
     enabled: !!actor && !isFetching,
   });

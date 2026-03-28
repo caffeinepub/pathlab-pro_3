@@ -18,7 +18,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Complete Blood Count (CBC)",
     unit: "cells/μL",
     referenceRange: "RBC: 4.5-5.5M | WBC: 4000-11000 | Hb: 12-17 g/dL",
-    price: 0n,
+    price: 350n,
     sampleType: "Blood (EDTA)",
   },
   {
@@ -26,7 +26,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Haemoglobin",
     unit: "g/dL",
     referenceRange: "M: 13-17 | F: 12-15",
-    price: 0n,
+    price: 100n,
     sampleType: "Blood (EDTA)",
   },
   {
@@ -34,7 +34,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "ESR (Erythrocyte Sedimentation Rate)",
     unit: "mm/hr",
     referenceRange: "M: 0-15 | F: 0-20",
-    price: 0n,
+    price: 80n,
     sampleType: "Blood (EDTA)",
   },
   {
@@ -42,7 +42,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Bleeding Time / Clotting Time",
     unit: "min",
     referenceRange: "BT: 1-3 min | CT: 4-10 min",
-    price: 0n,
+    price: 100n,
     sampleType: "Blood (Whole)",
   },
   {
@@ -50,7 +50,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Platelet Count",
     unit: "lakh/μL",
     referenceRange: "1.5-4.5 lakh/μL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (EDTA)",
   },
   {
@@ -58,7 +58,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Peripheral Blood Smear",
     unit: "N/A",
     referenceRange: "Normal morphology",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (EDTA)",
   },
   {
@@ -66,7 +66,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Reticulocyte Count",
     unit: "%",
     referenceRange: "0.5-1.5%",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (EDTA)",
   },
   {
@@ -74,7 +74,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Blood Group & Rh Factor",
     unit: "N/A",
     referenceRange: "A/B/AB/O, Rh+/-",
-    price: 0n,
+    price: 100n,
     sampleType: "Blood (EDTA)",
   },
   {
@@ -82,7 +82,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "PT / INR",
     unit: "seconds",
     referenceRange: "11-13.5 sec | INR: 0.9-1.1",
-    price: 0n,
+    price: 200n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -90,7 +90,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "aPTT",
     unit: "seconds",
     referenceRange: "25-35 seconds",
-    price: 0n,
+    price: 200n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -98,7 +98,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Malaria Parasite (MP) Test",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (EDTA)",
   },
   {
@@ -106,7 +106,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Malaria Antigen (RDT)",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 300n,
     sampleType: "Blood (Whole)",
   },
 
@@ -116,7 +116,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Blood Glucose Fasting",
     unit: "mg/dL",
     referenceRange: "70-100 mg/dL",
-    price: 0n,
+    price: 80n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -124,7 +124,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Blood Glucose Post Prandial (PP)",
     unit: "mg/dL",
     referenceRange: "<140 mg/dL",
-    price: 0n,
+    price: 80n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -132,7 +132,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Blood Glucose Random",
     unit: "mg/dL",
     referenceRange: "<200 mg/dL",
-    price: 0n,
+    price: 60n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -140,7 +140,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "HbA1c (Glycated Haemoglobin)",
     unit: "%",
     referenceRange: "<5.7% Normal | 5.7-6.4% Pre-diabetic | >6.5% Diabetic",
-    price: 0n,
+    price: 400n,
     sampleType: "Blood (EDTA)",
   },
   {
@@ -148,7 +148,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Insulin (Fasting)",
     unit: "μIU/mL",
     referenceRange: "2-25 μIU/mL",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -156,7 +156,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "C-Peptide",
     unit: "ng/mL",
     referenceRange: "0.9-7.1 ng/mL",
-    price: 0n,
+    price: 700n,
     sampleType: "Blood (Serum)",
   },
 
@@ -166,7 +166,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Liver Function Test (LFT)",
     unit: "U/L",
     referenceRange: "SGOT: 10-40 | SGPT: 7-56 | ALP: 44-147",
-    price: 0n,
+    price: 600n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -174,7 +174,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "SGOT / AST",
     unit: "U/L",
     referenceRange: "10-40 U/L",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -182,7 +182,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "SGPT / ALT",
     unit: "U/L",
     referenceRange: "7-56 U/L",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -190,7 +190,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Alkaline Phosphatase (ALP)",
     unit: "U/L",
     referenceRange: "44-147 U/L",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -198,7 +198,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Gamma GT (GGT)",
     unit: "U/L",
     referenceRange: "M: 9-48 | F: 5-30 U/L",
-    price: 0n,
+    price: 200n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -206,7 +206,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Bilirubin Total",
     unit: "mg/dL",
     referenceRange: "0.2-1.2 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -214,7 +214,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Bilirubin Direct",
     unit: "mg/dL",
     referenceRange: "0-0.3 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -222,7 +222,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Bilirubin Indirect",
     unit: "mg/dL",
     referenceRange: "0.1-0.9 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -230,7 +230,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Total Protein",
     unit: "g/dL",
     referenceRange: "6.3-8.2 g/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -238,7 +238,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Albumin",
     unit: "g/dL",
     referenceRange: "3.5-5.0 g/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -246,7 +246,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Globulin",
     unit: "g/dL",
     referenceRange: "2.0-3.5 g/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
 
@@ -256,7 +256,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Kidney Function Test (KFT)",
     unit: "mg/dL",
     referenceRange: "Creatinine: 0.6-1.2 | Urea: 7-20 | eGFR: >60",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -264,7 +264,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Serum Creatinine",
     unit: "mg/dL",
     referenceRange: "M: 0.7-1.3 | F: 0.6-1.1 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -272,7 +272,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Blood Urea Nitrogen (BUN)",
     unit: "mg/dL",
     referenceRange: "7-20 mg/dL",
-    price: 0n,
+    price: 100n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -280,7 +280,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Serum Urea",
     unit: "mg/dL",
     referenceRange: "15-45 mg/dL",
-    price: 0n,
+    price: 100n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -288,7 +288,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Uric Acid",
     unit: "mg/dL",
     referenceRange: "M: 3.5-7.2 | F: 2.6-6.0 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -296,7 +296,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "eGFR (Estimated GFR)",
     unit: "mL/min/1.73m²",
     referenceRange: ">60 Normal",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (Serum)",
   },
 
@@ -306,7 +306,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Lipid Profile",
     unit: "mg/dL",
     referenceRange: "Total Chol: <200 | LDL: <100 | HDL: >60 | TG: <150",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -314,7 +314,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Total Cholesterol",
     unit: "mg/dL",
     referenceRange: "<200 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -322,7 +322,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "HDL Cholesterol",
     unit: "mg/dL",
     referenceRange: ">60 mg/dL",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -330,7 +330,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "LDL Cholesterol",
     unit: "mg/dL",
     referenceRange: "<100 mg/dL",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -338,7 +338,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "VLDL Cholesterol",
     unit: "mg/dL",
     referenceRange: "2-30 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -346,7 +346,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Triglycerides",
     unit: "mg/dL",
     referenceRange: "<150 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
 
@@ -356,7 +356,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Thyroid Function Test (TFT)",
     unit: "mIU/L",
     referenceRange: "TSH: 0.4-4.0 | T3: 80-200 ng/dL | T4: 5-12 μg/dL",
-    price: 0n,
+    price: 700n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -364,7 +364,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "TSH (Thyroid Stimulating Hormone)",
     unit: "mIU/L",
     referenceRange: "0.4-4.0 mIU/L",
-    price: 0n,
+    price: 300n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -372,7 +372,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Free T3 (Tri-iodothyronine)",
     unit: "pg/mL",
     referenceRange: "2.0-4.4 pg/mL",
-    price: 0n,
+    price: 300n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -380,7 +380,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Free T4 (Thyroxine)",
     unit: "ng/dL",
     referenceRange: "0.8-1.8 ng/dL",
-    price: 0n,
+    price: 300n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -388,7 +388,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Anti-TPO Antibodies",
     unit: "IU/mL",
     referenceRange: "<35 IU/mL",
-    price: 0n,
+    price: 600n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -396,7 +396,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Anti-Thyroglobulin Antibodies",
     unit: "IU/mL",
     referenceRange: "<115 IU/mL",
-    price: 0n,
+    price: 600n,
     sampleType: "Blood (Serum)",
   },
 
@@ -406,7 +406,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "FSH (Follicle Stimulating Hormone)",
     unit: "mIU/mL",
     referenceRange: "F: 3.5-12.5 | M: 1.5-12.4 mIU/mL",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -414,7 +414,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "LH (Luteinizing Hormone)",
     unit: "mIU/mL",
     referenceRange: "F: 2.4-12.6 | M: 1.7-8.6 mIU/mL",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -422,7 +422,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Prolactin",
     unit: "ng/mL",
     referenceRange: "F: 2-29 | M: 2-18 ng/mL",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -430,7 +430,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Testosterone (Total)",
     unit: "ng/dL",
     referenceRange: "M: 300-1000 | F: 15-70 ng/dL",
-    price: 0n,
+    price: 600n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -438,7 +438,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Estradiol (E2)",
     unit: "pg/mL",
     referenceRange: "F: 20-350 | M: 10-40 pg/mL",
-    price: 0n,
+    price: 600n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -446,7 +446,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Progesterone",
     unit: "ng/mL",
     referenceRange: "Follicular: 0.1-0.9 | Luteal: 2-25 ng/mL",
-    price: 0n,
+    price: 600n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -454,7 +454,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Cortisol (Morning)",
     unit: "μg/dL",
     referenceRange: "6-23 μg/dL (morning)",
-    price: 0n,
+    price: 700n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -462,7 +462,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "DHEA-S",
     unit: "μg/dL",
     referenceRange: "M: 100-600 | F: 80-420 μg/dL",
-    price: 0n,
+    price: 700n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -470,7 +470,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Beta HCG (Pregnancy Test)",
     unit: "mIU/mL",
     referenceRange: "Non-pregnant: <5 mIU/mL",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -478,7 +478,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "PSA (Prostate Specific Antigen)",
     unit: "ng/mL",
     referenceRange: "<4.0 ng/mL",
-    price: 0n,
+    price: 700n,
     sampleType: "Blood (Serum)",
   },
 
@@ -488,7 +488,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Vitamin D (25-OH)",
     unit: "ng/mL",
     referenceRange: "30-100 ng/mL",
-    price: 0n,
+    price: 800n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -496,7 +496,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Vitamin B12",
     unit: "pg/mL",
     referenceRange: "200-900 pg/mL",
-    price: 0n,
+    price: 700n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -504,7 +504,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Folic Acid (Folate)",
     unit: "ng/mL",
     referenceRange: ">3.0 ng/mL",
-    price: 0n,
+    price: 600n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -512,7 +512,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Calcium (Serum)",
     unit: "mg/dL",
     referenceRange: "8.5-10.5 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -520,7 +520,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Phosphorus (Serum)",
     unit: "mg/dL",
     referenceRange: "2.5-4.5 mg/dL",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -528,7 +528,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Magnesium (Serum)",
     unit: "mg/dL",
     referenceRange: "1.7-2.2 mg/dL",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -536,7 +536,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Electrolytes (Na/K/Cl)",
     unit: "mEq/L",
     referenceRange: "Na: 136-145 | K: 3.5-5.0 | Cl: 98-107",
-    price: 0n,
+    price: 350n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -544,7 +544,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Sodium (Serum)",
     unit: "mEq/L",
     referenceRange: "136-145 mEq/L",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -552,7 +552,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Potassium (Serum)",
     unit: "mEq/L",
     referenceRange: "3.5-5.0 mEq/L",
-    price: 0n,
+    price: 120n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -560,7 +560,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Serum Iron",
     unit: "μg/dL",
     referenceRange: "M: 60-170 | F: 50-170 μg/dL",
-    price: 0n,
+    price: 200n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -568,7 +568,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "TIBC (Total Iron Binding Capacity)",
     unit: "μg/dL",
     referenceRange: "250-370 μg/dL",
-    price: 0n,
+    price: 250n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -576,7 +576,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Ferritin",
     unit: "ng/mL",
     referenceRange: "M: 12-300 | F: 12-150 ng/mL",
-    price: 0n,
+    price: 700n,
     sampleType: "Blood (Serum)",
   },
 
@@ -586,7 +586,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Troponin I",
     unit: "ng/mL",
     referenceRange: "<0.04 ng/mL",
-    price: 0n,
+    price: 800n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -594,7 +594,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Troponin T",
     unit: "ng/mL",
     referenceRange: "<0.1 ng/mL",
-    price: 0n,
+    price: 800n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -602,7 +602,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "CK-MB",
     unit: "U/L",
     referenceRange: "<25 U/L",
-    price: 0n,
+    price: 400n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -610,7 +610,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "CPK (Creatine Phosphokinase)",
     unit: "U/L",
     referenceRange: "M: 38-174 | F: 26-140 U/L",
-    price: 0n,
+    price: 350n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -618,7 +618,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "LDH (Lactate Dehydrogenase)",
     unit: "U/L",
     referenceRange: "140-280 U/L",
-    price: 0n,
+    price: 300n,
     sampleType: "Blood (Serum)",
   },
 
@@ -628,7 +628,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "CRP (C-Reactive Protein)",
     unit: "mg/L",
     referenceRange: "<5 mg/L",
-    price: 0n,
+    price: 300n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -636,7 +636,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "hs-CRP (High Sensitivity CRP)",
     unit: "mg/L",
     referenceRange: "<1.0 mg/L (low risk)",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -644,7 +644,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "RA Factor (Rheumatoid Arthritis)",
     unit: "IU/mL",
     referenceRange: "<14 IU/mL",
-    price: 0n,
+    price: 200n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -652,7 +652,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "ASO Titre",
     unit: "IU/mL",
     referenceRange: "<200 IU/mL",
-    price: 0n,
+    price: 200n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -660,7 +660,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "ANA (Anti-Nuclear Antibody)",
     unit: "Titer",
     referenceRange: "Negative (<1:40)",
-    price: 0n,
+    price: 800n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -668,7 +668,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Anti-dsDNA",
     unit: "IU/mL",
     referenceRange: "<30 IU/mL",
-    price: 0n,
+    price: 900n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -676,7 +676,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Procalcitonin",
     unit: "ng/mL",
     referenceRange: "<0.5 ng/mL",
-    price: 0n,
+    price: 1200n,
     sampleType: "Blood (Serum)",
   },
 
@@ -686,7 +686,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Widal Test (Typhoid)",
     unit: "Titer",
     referenceRange: "<1:80",
-    price: 0n,
+    price: 150n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -694,7 +694,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Typhidot / Typhoid IgM/IgG",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 400n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -702,7 +702,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Dengue NS1 Antigen",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -710,7 +710,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Dengue IgM / IgG",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 600n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -718,7 +718,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "HIV 1 & 2 (ELISA)",
     unit: "N/A",
     referenceRange: "Non-Reactive",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -726,7 +726,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "HBsAg (Hepatitis B Surface Antigen)",
     unit: "N/A",
     referenceRange: "Non-Reactive",
-    price: 0n,
+    price: 300n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -734,7 +734,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Anti-HCV (Hepatitis C)",
     unit: "N/A",
     referenceRange: "Non-Reactive",
-    price: 0n,
+    price: 500n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -742,7 +742,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "VDRL (Syphilis)",
     unit: "Titer",
     referenceRange: "Non-Reactive",
-    price: 0n,
+    price: 200n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -750,7 +750,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "COVID-19 Antigen Test",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 300n,
     sampleType: "Swab",
   },
   {
@@ -758,7 +758,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "COVID-19 IgM/IgG Antibody",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 400n,
     sampleType: "Blood (Serum)",
   },
 
@@ -768,7 +768,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Amylase (Serum)",
     unit: "U/L",
     referenceRange: "28-100 U/L",
-    price: 0n,
+    price: 250n,
     sampleType: "Blood (Serum)",
   },
   {
@@ -776,7 +776,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Lipase (Serum)",
     unit: "U/L",
     referenceRange: "10-73 U/L",
-    price: 0n,
+    price: 300n,
     sampleType: "Blood (Serum)",
   },
 
@@ -786,7 +786,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Urine Routine & Microscopy",
     unit: "N/A",
     referenceRange: "pH: 4.5-8.0 | Protein: Neg | Glucose: Neg",
-    price: 0n,
+    price: 120n,
     sampleType: "Urine",
   },
   {
@@ -794,7 +794,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Urine Culture & Sensitivity",
     unit: "N/A",
     referenceRange: "No growth",
-    price: 0n,
+    price: 400n,
     sampleType: "Urine",
   },
   {
@@ -802,7 +802,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Urine Microalbumin",
     unit: "mg/L",
     referenceRange: "<30 mg/L",
-    price: 0n,
+    price: 400n,
     sampleType: "Urine",
   },
   {
@@ -810,7 +810,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Urine Creatinine",
     unit: "mg/dL",
     referenceRange: "M: 14-26 | F: 11-20 mg/kg/day",
-    price: 0n,
+    price: 150n,
     sampleType: "Urine",
   },
   {
@@ -818,7 +818,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "24-Hr Urine Protein",
     unit: "mg/24hr",
     referenceRange: "<150 mg/24hr",
-    price: 0n,
+    price: 200n,
     sampleType: "Urine",
   },
   {
@@ -826,7 +826,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Urine Pregnancy Test (UPT)",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 80n,
     sampleType: "Urine",
   },
 
@@ -836,7 +836,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Stool Routine & Microscopy",
     unit: "N/A",
     referenceRange: "Normal",
-    price: 0n,
+    price: 120n,
     sampleType: "Stool",
   },
   {
@@ -844,7 +844,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Stool Culture & Sensitivity",
     unit: "N/A",
     referenceRange: "No pathogen",
-    price: 0n,
+    price: 400n,
     sampleType: "Stool",
   },
   {
@@ -852,7 +852,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Occult Blood (Stool)",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 150n,
     sampleType: "Stool",
   },
   {
@@ -860,7 +860,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "H. Pylori Stool Antigen",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 500n,
     sampleType: "Stool",
   },
   {
@@ -868,7 +868,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "H. Pylori IgG (Blood)",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 400n,
     sampleType: "Blood (Serum)",
   },
 
@@ -878,7 +878,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Blood Culture & Sensitivity",
     unit: "N/A",
     referenceRange: "No growth",
-    price: 0n,
+    price: 800n,
     sampleType: "Blood (Whole)",
   },
   {
@@ -886,7 +886,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Sputum Culture & Sensitivity",
     unit: "N/A",
     referenceRange: "No growth",
-    price: 0n,
+    price: 600n,
     sampleType: "Sputum",
   },
   {
@@ -894,7 +894,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Sputum AFB (TB Smear)",
     unit: "N/A",
     referenceRange: "Negative",
-    price: 0n,
+    price: 200n,
     sampleType: "Sputum",
   },
   {
@@ -902,7 +902,7 @@ export const SAMPLE_TEST_CATALOG = [
     name: "Throat / Wound Swab Culture",
     unit: "N/A",
     referenceRange: "No growth",
-    price: 0n,
+    price: 500n,
     sampleType: "Swab",
   },
 ];

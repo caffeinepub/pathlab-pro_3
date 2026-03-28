@@ -155,28 +155,19 @@ actor {
 
   // User Profile Management Functions
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view profiles");
-    };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not Authorization.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
     userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
     userProfiles.add(caller, profile);
   };
 
   // Test Catalog Management
-  public shared ({ caller = _ }) func addTestCatalog(test : TestCatalogInput) : async () {
+  public shared ({ caller }) func addTestCatalog(test : TestCatalogInput) : async () {
     let testData : Test = {
       name = test.name;
       code = test.code;
@@ -188,7 +179,7 @@ actor {
     testCatalog.add(test.code, testData);
   };
 
-  public shared ({ caller = _ }) func updateTestPrice(code : TestCode, price : Nat) : async () {
+  public shared ({ caller }) func updateTestPrice(code : TestCode, price : Nat) : async () {
     switch (testCatalog.get(code)) {
       case (null) { Runtime.trap("Test not found") };
       case (?test) {
@@ -205,18 +196,18 @@ actor {
     };
   };
 
-  public query ({ caller = _ }) func getAllTestCatalog() : async [Test] {
+  public query ({ caller }) func getAllTestCatalog() : async [Test] {
     testCatalog.values().toArray();
   };
 
-  public query ({ caller = _ }) func getTestCatalog(code : TestCode) : async Test {
+  public query ({ caller }) func getTestCatalog(code : TestCode) : async Test {
     switch (testCatalog.get(code)) {
       case (null) { Runtime.trap("Test not found") };
       case (?test) { test };
     };
   };
 
-  public query ({ caller = _ }) func getAllTestCatalogBySampleType(sampleType : Text) : async [Test] {
+  public query ({ caller }) func getAllTestCatalogBySampleType(sampleType : Text) : async [Test] {
     testCatalog.values().toArray().filter(
       func(test) {
         test.sampleType == sampleType;
@@ -226,9 +217,6 @@ actor {
 
   // Patient Management
   public shared ({ caller }) func addPatient(rawData : PatientInput) : async PatientId {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can add patients");
-    };
     if (rawData.name == "" or rawData.age == null or rawData.gender == null) {
       Runtime.trap("Invalid patient data");
     };
@@ -258,9 +246,6 @@ actor {
   };
 
   public shared ({ caller }) func updatePatient(id : PatientId, rawData : PatientInput) : async () {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can modify patient data");
-    };
     switch (patients.get(id)) {
       case (null) { Runtime.trap("Patient not found") };
       case (?patientRecord) {
@@ -294,9 +279,6 @@ actor {
   };
 
   public query ({ caller }) func getPatient(id : PatientId) : async Patient {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view patient details");
-    };
     switch (patients.get(id)) {
       case (null) { Runtime.trap("Patient not found") };
       case (?patient) { patient.patient };
@@ -304,16 +286,10 @@ actor {
   };
 
   public query ({ caller }) func getAllPatientsByCreatedAt() : async [PatientRecord] {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view patients");
-    };
     patients.values().toArray().sort(PatientRecord.compareByCreatedAt);
   };
 
   public query ({ caller }) func getMostRecentPatients(limit : Nat) : async [Patient] {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view patients");
-    };
     patients.values().toArray().sort(PatientRecord.compareByCreatedAt).map(
       func(record) { record.patient }
     );
@@ -321,9 +297,6 @@ actor {
 
   // Test Report Management
   public shared ({ caller }) func createTestReport(input : TestReportInput) : async ReportId {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can create test reports");
-    };
     let newId = nextReportId;
     nextReportId += 1;
     let report : TestReport = {
@@ -341,9 +314,6 @@ actor {
   };
 
   public shared ({ caller }) func updateTestReportResult(reportId : ReportId, results : [TestResult]) : async () {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can update test results");
-    };
     switch (testReports.get(reportId)) {
       case (null) { Runtime.trap("Test report not found") };
       case (?report) {
@@ -363,9 +333,6 @@ actor {
   };
 
   public query ({ caller }) func getTestReport(reportId : ReportId) : async TestReport {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view test reports");
-    };
     switch (testReports.get(reportId)) {
       case (null) { Runtime.trap("Test report not found") };
       case (?report) { report };
@@ -373,9 +340,6 @@ actor {
   };
 
   public query ({ caller }) func getPatientReportsByCreatedAt(patientId : PatientId) : async [TestReport] {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view patient reports");
-    };
     let patientReportsList = List.empty<TestReport>();
     for (report in testReports.values()) {
       if (report.patientId == patientId) {
@@ -387,39 +351,24 @@ actor {
   };
 
   public query ({ caller }) func getTestReportsByCreatedAt() : async [TestReport] {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view test reports");
-    };
     testReports.values().toArray().sort(TestReport.compareByCreatedAt);
   };
 
   public query ({ caller }) func getTestReportsByCompletedAt() : async [TestReport] {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view test reports");
-    };
     testReports.values().toArray().sort(TestReport.compareByCompletedAt);
   };
 
   public query ({ caller }) func getReportsByStatus(status : TestStatus) : async [TestReport] {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view test reports");
-    };
     testReports.values().toArray().filter(func(report) { report.status == status });
   };
 
   // Signature Management
   public shared ({ caller }) func storeSignature(reportId : ReportId, signature : Storage.ExternalBlob) : async () {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can store signatures");
-    };
     let signatureId = reportId.toText();
     signatures.add(signatureId, signature);
   };
 
   public query ({ caller }) func getSignature(reportId : ReportId) : async Storage.ExternalBlob {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view signatures");
-    };
     let signatureId = reportId.toText();
     switch (signatures.get(signatureId)) {
       case (null) { Runtime.trap("Signature not found") };
@@ -429,9 +378,6 @@ actor {
 
   // Billing Management
   public shared ({ caller }) func createBill(reportId : ReportId, lineItems : [BillLineItem]) : async BillId {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can create bills");
-    };
     var total = 0;
     for (item in lineItems.values()) {
       total += item.price;
@@ -452,9 +398,6 @@ actor {
   };
 
   public shared ({ caller }) func updatePaymentStatus(billId : BillId, status : PaymentStatus) : async () {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can update payment status");
-    };
     switch (bills.get(billId)) {
       case (null) { Runtime.trap("Bill not found") };
       case (?bill) {
@@ -472,9 +415,6 @@ actor {
   };
 
   public query ({ caller }) func getBill(billId : BillId) : async Bill {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view bill details");
-    };
     switch (bills.get(billId)) {
       case (null) { Runtime.trap("Bill not found") };
       case (?bill) { bill };
@@ -482,17 +422,11 @@ actor {
   };
 
   public query ({ caller }) func getAllBillsByTimestamp() : async [Bill] {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view bills");
-    };
     bills.values().toArray().sort(Bill.compareByTimestamp);
   };
 
   // Dashboard
   public query ({ caller }) func getDashboardStats() : async DashboardStats {
-    if (not (Authorization.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view dashboard stats");
-    };
     let currentTimestamp = Time.now();
     let totalPatients = patients.size();
     let pendingReports = testReports.size() - testReports.values().toArray().filter(

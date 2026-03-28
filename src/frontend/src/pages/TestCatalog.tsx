@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FlaskConical, Loader2, Pencil, Plus } from "lucide-react";
+import { FlaskConical, Loader2, Pencil, Plus, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -79,7 +79,7 @@ export default function TestCatalog() {
     sampleType: "",
   });
 
-  // Seed on first load
+  // Seed on first load if empty
   useEffect(() => {
     if (!isLoading && tests && tests.length === 0 && !seeded) {
       setSeeded(true);
@@ -91,6 +91,14 @@ export default function TestCatalog() {
       });
     }
   }, [isLoading, tests, seeded, seedTests]);
+
+  const handleReloadStandardTests = () => {
+    seedTests.mutate(SAMPLE_TEST_CATALOG, {
+      onSuccess: () =>
+        toast.success("All standard tests reloaded successfully!"),
+      onError: () => toast.error("Could not reload tests. Please try again."),
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,123 +170,141 @@ export default function TestCatalog() {
             Manage available diagnostic tests
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button data-ocid="catalog.open_modal_button">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Test
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg" data-ocid="catalog.dialog">
-            <DialogHeader>
-              <DialogTitle>Add New Test</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="code">Test Code *</Label>
-                  <Input
-                    id="code"
-                    value={form.code}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, code: e.target.value }))
-                    }
-                    placeholder="e.g. CBC"
-                    required
-                    data-ocid="catalog.input"
-                  />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleReloadStandardTests}
+            disabled={seedTests.isPending}
+            data-ocid="catalog.secondary_button"
+          >
+            {seedTests.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Reload Standard Tests
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button data-ocid="catalog.open_modal_button">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Test
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg" data-ocid="catalog.dialog">
+              <DialogHeader>
+                <DialogTitle>Add New Test</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="code">Test Code *</Label>
+                    <Input
+                      id="code"
+                      value={form.code}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, code: e.target.value }))
+                      }
+                      placeholder="e.g. CBC"
+                      required
+                      data-ocid="catalog.input"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="price">Price (₹)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      min={0}
+                      value={form.price}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, price: e.target.value }))
+                      }
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1.5">
+                    <Label htmlFor="tname">Test Name *</Label>
+                    <Input
+                      id="tname"
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, name: e.target.value }))
+                      }
+                      placeholder="Complete Blood Count"
+                      required
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1.5">
+                    <Label htmlFor="sampleType">Sample Type *</Label>
+                    <Select
+                      value={form.sampleType}
+                      onValueChange={(val) =>
+                        setForm((p) => ({ ...p, sampleType: val }))
+                      }
+                    >
+                      <SelectTrigger id="sampleType" data-ocid="catalog.select">
+                        <SelectValue placeholder="Select sample type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SAMPLE_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="unit">Unit</Label>
+                    <Input
+                      id="unit"
+                      value={form.unit}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, unit: e.target.value }))
+                      }
+                      placeholder="mg/dL"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="refrange">Reference Range</Label>
+                    <Input
+                      id="refrange"
+                      value={form.referenceRange}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          referenceRange: e.target.value,
+                        }))
+                      }
+                      placeholder="70-100"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="price">Price (₹)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min={0}
-                    value={form.price}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, price: e.target.value }))
-                    }
-                    placeholder="0"
-                  />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label htmlFor="tname">Test Name *</Label>
-                  <Input
-                    id="tname"
-                    value={form.name}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, name: e.target.value }))
-                    }
-                    placeholder="Complete Blood Count"
-                    required
-                  />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label htmlFor="sampleType">Sample Type *</Label>
-                  <Select
-                    value={form.sampleType}
-                    onValueChange={(val) =>
-                      setForm((p) => ({ ...p, sampleType: val }))
-                    }
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                    data-ocid="catalog.cancel_button"
                   >
-                    <SelectTrigger id="sampleType" data-ocid="catalog.select">
-                      <SelectValue placeholder="Select sample type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SAMPLE_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={addTest.isPending}
+                    data-ocid="catalog.submit_button"
+                  >
+                    {addTest.isPending && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
+                    Add Test
+                  </Button>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="unit">Unit</Label>
-                  <Input
-                    id="unit"
-                    value={form.unit}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, unit: e.target.value }))
-                    }
-                    placeholder="mg/dL"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="refrange">Reference Range</Label>
-                  <Input
-                    id="refrange"
-                    value={form.referenceRange}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, referenceRange: e.target.value }))
-                    }
-                    placeholder="70-100"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                  data-ocid="catalog.cancel_button"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={addTest.isPending}
-                  data-ocid="catalog.submit_button"
-                >
-                  {addTest.isPending && (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  )}
-                  Add Test
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="shadow-card">
