@@ -211,7 +211,13 @@ function SampleCard({
 
 export default function SampleCollection() {
   const { data: patientRecords, isLoading: patientsLoading } = usePatients();
-  const [samples, setSamples] = useState<Sample[]>(INITIAL_SAMPLES);
+  const [samples, setSamples] = useState<Sample[]>(() => {
+    try {
+      const stored = localStorage.getItem("pathlab_samples");
+      if (stored) return JSON.parse(stored) as Sample[];
+    } catch {}
+    return INITIAL_SAMPLES;
+  });
   const [newOpen, setNewOpen] = useState(false);
   const [qrSample, setQrSample] = useState<Sample | null>(null);
   const [generatedQR, setGeneratedQR] = useState<Sample | null>(null);
@@ -228,6 +234,11 @@ export default function SampleCollection() {
   const { data: patientReportsData } = usePatientReports(selectedPatientId);
 
   // Auto-fill tests and sample type when patient reports arrive
+  // Persist samples to localStorage on every change
+  useEffect(() => {
+    localStorage.setItem("pathlab_samples", JSON.stringify(samples));
+  }, [samples]);
+
   useEffect(() => {
     if (patientReportsData && patientReportsData.length > 0) {
       const latestReport = patientReportsData[0];
