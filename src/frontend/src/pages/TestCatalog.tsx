@@ -17,18 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { FlaskConical, Loader2, Pencil, Plus, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { FlaskConical, Pencil, Plus, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  useAddTestCatalog,
-  useSeedTestCatalog,
-  useTestCatalog,
-  useUpdateTestPrice,
-  useUpdateTestRange,
-} from "../hooks/useQueries";
 import { SAMPLE_TEST_CATALOG } from "../lib/constants";
+
+const STORAGE_KEY = "pathlab_test_catalog_overrides";
+const CUSTOM_TESTS_KEY = "pathlab_custom_tests";
 
 const SAMPLE_TYPES = [
   "Blood (Serum)",
@@ -41,6 +36,17 @@ const SAMPLE_TYPES = [
   "CSF",
   "Other",
 ];
+
+type TestItem = {
+  code: string;
+  name: string;
+  unit: string;
+  referenceRange: string;
+  price: bigint;
+  sampleType: string;
+};
+
+type Overrides = Record<string, { price?: number; referenceRange?: string }>;
 
 function getSampleTypeBadgeClass(sampleType: string): string {
   const lower = sampleType.toLowerCase();
@@ -57,14 +63,44 @@ function getSampleTypeBadgeClass(sampleType: string): string {
   return "bg-gray-100 text-gray-600 border-gray-200";
 }
 
+function loadOverrides(): Overrides {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveOverrides(overrides: Overrides) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+}
+
+function loadCustomTests(): TestItem[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_TESTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return parsed.map((t: TestItem & { price: number }) => ({
+      ...t,
+      price: BigInt(t.price),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomTests(tests: TestItem[]) {
+  localStorage.setItem(
+    CUSTOM_TESTS_KEY,
+    JSON.stringify(tests.map((t) => ({ ...t, price: Number(t.price) }))),
+  );
+}
+
 export default function TestCatalog() {
-  const { data: tests, isLoading } = useTestCatalog();
-  const addTest = useAddTestCatalog();
-  const seedTests = useSeedTestCatalog();
-  const updatePrice = useUpdateTestPrice();
-  const updateRange = useUpdateTestRange();
+  const [overrides, setOverrides] = useState<Overrides>(loadOverrides);
+  const [customTests, setCustomTests] = useState<TestItem[]>(loadCustomTests);
   const [open, setOpen] = useState(false);
-  const [seeded, setSeeded] = useState(false);
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
   const [editingRangeCode, setEditingRangeCode] = useState<string | null>(null);
@@ -79,86 +115,115 @@ export default function TestCatalog() {
     sampleType: "",
   });
 
-  // Seed on first load if empty
-  useEffect(() => {
-    if (!isLoading && tests && tests.length === 0 && !seeded) {
-      setSeeded(true);
-      seedTests.mutate(SAMPLE_TEST_CATALOG, {
-        onSuccess: () =>
-          toast.success("Test catalog loaded with all standard tests!"),
-        onError: () =>
-          toast.error("Could not load test catalog. Please try again."),
-      });
-    }
-  }, [isLoading, tests, seeded, seedTests]);
+  // Merge standard tests with overrides and custom tests
+  const allTests: TestItem[] = useMemo(() => {
+    const standard = SAMPLE_TEST_CATALOG.map((t) => ({
+      ...t,
+      price:
+        overrides[t.code]?.price !== undefined
+          ? BigInt(overrides[t.code].price!)
+          : t.price,
+      referenceRange: overrides[t.code]?.referenceRange ?? t.referenceRange,
+    }));
+    return [...standard, ...customTests];
+  }, [overrides, customTests]);
 
-  const handleReloadStandardTests = () => {
-    seedTests.mutate(SAMPLE_TEST_CATALOG, {
-      onSuccess: () =>
-        toast.success("All standard tests reloaded successfully!"),
-      onError: () => toast.error("Could not reload tests. Please try again."),
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await addTest.mutateAsync({
-        code: form.code.toUpperCase(),
-        name: form.name,
-        unit: form.unit,
-        referenceRange: form.referenceRange,
-        price: BigInt(form.price || 0),
-        sampleType: form.sampleType,
-      });
-      toast.success("Test added to catalog!");
-      setOpen(false);
-      setForm({
-        code: "",
-        name: "",
-        unit: "",
-        referenceRange: "",
-        price: "",
-        sampleType: "",
-      });
-    } catch {
-      toast.error("Failed to add test.");
-    }
-  };
-
-  const handleSavePrice = async (code: string) => {
-    try {
-      await updatePrice.mutateAsync({
-        code,
-        price: BigInt(editPrice || 0),
-      });
-      toast.success("Price updated!");
-      setEditingCode(null);
-      setEditPrice("");
-    } catch {
-      toast.error("Failed to update price.");
-    }
-  };
-
-  const filteredTests = (tests ?? []).filter(
-    (t) =>
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.sampleType.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredTests = useMemo(
+    () =>
+      allTests.filter(
+        (t) =>
+          t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.sampleType.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [allTests, searchQuery],
   );
 
-  const handleSaveRange = async (test: (typeof filteredTests)[0]) => {
-    try {
-      await updateRange.mutateAsync({
-        test: { ...test, price: test.price },
-        referenceRange: editRange,
-      });
-      toast.success("Normal range updated!");
-      setEditingRangeCode(null);
-      setEditRange("");
-    } catch {
-      toast.error("Failed to update range.");
+  // Sync to localStorage whenever state changes
+  useEffect(() => {
+    saveOverrides(overrides);
+  }, [overrides]);
+  useEffect(() => {
+    saveCustomTests(customTests);
+  }, [customTests]);
+
+  const handleSavePrice = (code: string) => {
+    const newPrice = Number.parseInt(editPrice || "0", 10);
+    const isCustom = customTests.some((t) => t.code === code);
+    if (isCustom) {
+      setCustomTests((prev) =>
+        prev.map((t) =>
+          t.code === code ? { ...t, price: BigInt(newPrice) } : t,
+        ),
+      );
+    } else {
+      setOverrides((prev) => ({
+        ...prev,
+        [code]: { ...prev[code], price: newPrice },
+      }));
     }
+    toast.success("Price updated!");
+    setEditingCode(null);
+    setEditPrice("");
+  };
+
+  const handleSaveRange = (code: string, currentRange: string) => {
+    const newRange = editRange || currentRange;
+    const isCustom = customTests.some((t) => t.code === code);
+    if (isCustom) {
+      setCustomTests((prev) =>
+        prev.map((t) =>
+          t.code === code ? { ...t, referenceRange: newRange } : t,
+        ),
+      );
+    } else {
+      setOverrides((prev) => ({
+        ...prev,
+        [code]: { ...prev[code], referenceRange: newRange },
+      }));
+    }
+    toast.success("Normal range updated!");
+    setEditingRangeCode(null);
+    setEditRange("");
+  };
+
+  const handleReload = () => {
+    setOverrides({});
+    saveOverrides({});
+    toast.success("Standard tests reloaded with default prices and ranges!");
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = form.code.toUpperCase().trim();
+    if (!code || !form.name || !form.sampleType) {
+      toast.error("Code, Name, and Sample Type are required.");
+      return;
+    }
+    const existing = allTests.some((t) => t.code === code);
+    if (existing) {
+      toast.error("A test with this code already exists.");
+      return;
+    }
+    const newTest: TestItem = {
+      code,
+      name: form.name.trim(),
+      unit: form.unit.trim(),
+      referenceRange: form.referenceRange.trim(),
+      price: BigInt(Number.parseInt(form.price || "0", 10)),
+      sampleType: form.sampleType,
+    };
+    setCustomTests((prev) => [...prev, newTest]);
+    toast.success("Test added to catalog!");
+    setOpen(false);
+    setForm({
+      code: "",
+      name: "",
+      unit: "",
+      referenceRange: "",
+      price: "",
+      sampleType: "",
+    });
   };
 
   return (
@@ -173,15 +238,10 @@ export default function TestCatalog() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={handleReloadStandardTests}
-            disabled={seedTests.isPending}
+            onClick={handleReload}
             data-ocid="catalog.secondary_button"
           >
-            {seedTests.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
+            <RefreshCw className="h-4 w-4 mr-2" />
             Reload Standard Tests
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
@@ -290,14 +350,7 @@ export default function TestCatalog() {
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={addTest.isPending}
-                    data-ocid="catalog.submit_button"
-                  >
-                    {addTest.isPending && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
+                  <Button type="submit" data-ocid="catalog.submit_button">
                     Add Test
                   </Button>
                 </div>
@@ -313,7 +366,7 @@ export default function TestCatalog() {
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <FlaskConical className="h-4 w-4" />
               Available Tests
-              <Badge variant="secondary">{tests?.length ?? 0}</Badge>
+              <Badge variant="secondary">{allTests.length}</Badge>
             </CardTitle>
             <Input
               placeholder="Search tests..."
@@ -324,217 +377,197 @@ export default function TestCatalog() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading || seedTests.isPending ? (
-            <div className="space-y-2" data-ocid="catalog.loading_state">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm" data-ocid="catalog.table">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">
-                      Code
-                    </th>
-                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">
-                      Test Name
-                    </th>
-                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">
-                      Sample Type
-                    </th>
-                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">
-                      Unit
-                    </th>
-                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">
-                      Normal Range
-                    </th>
-                    <th className="text-right py-2 px-3 text-muted-foreground font-medium">
-                      Price (₹)
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTests.map((test, idx) => (
-                    <tr
-                      key={test.code}
-                      className="border-b border-border/50 hover:bg-muted/30"
-                      data-ocid={`catalog.item.${idx + 1}`}
-                    >
-                      <td className="py-2.5 px-3">
-                        <Badge variant="outline" className="font-mono text-xs">
-                          {test.code}
-                        </Badge>
-                      </td>
-                      <td className="py-2.5 px-3 font-medium">{test.name}</td>
-                      <td className="py-2.5 px-3">
-                        {test.sampleType ? (
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getSampleTypeBadgeClass(test.sampleType)}`}
-                          >
-                            {test.sampleType}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">
-                            —
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-3 text-muted-foreground">
-                        {test.unit}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        {editingRangeCode === test.code ? (
-                          <div className="flex items-center gap-1">
-                            <Input
-                              value={editRange}
-                              onChange={(e) => setEditRange(e.target.value)}
-                              className="h-7 w-28 text-sm"
-                              autoFocus
-                              placeholder="e.g. < 5"
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveRange(test);
-                                if (e.key === "Escape") {
-                                  setEditingRangeCode(null);
-                                  setEditRange("");
-                                }
-                              }}
-                            />
-                            <Button
-                              size="sm"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => handleSaveRange(test)}
-                              disabled={updateRange.isPending}
-                            >
-                              {updateRange.isPending ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                "Save"
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => {
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-ocid="catalog.table">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-3 text-muted-foreground font-medium">
+                    Code
+                  </th>
+                  <th className="text-left py-2 px-3 text-muted-foreground font-medium">
+                    Test Name
+                  </th>
+                  <th className="text-left py-2 px-3 text-muted-foreground font-medium">
+                    Sample Type
+                  </th>
+                  <th className="text-left py-2 px-3 text-muted-foreground font-medium">
+                    Unit
+                  </th>
+                  <th className="text-left py-2 px-3 text-muted-foreground font-medium">
+                    Normal Range
+                  </th>
+                  <th className="text-right py-2 px-3 text-muted-foreground font-medium">
+                    Price (₹)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTests.map((test, idx) => (
+                  <tr
+                    key={test.code}
+                    className="border-b border-border/50 hover:bg-muted/30"
+                    data-ocid={`catalog.item.${idx + 1}`}
+                  >
+                    <td className="py-2.5 px-3">
+                      <Badge variant="outline" className="font-mono text-xs">
+                        {test.code}
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 px-3 font-medium">{test.name}</td>
+                    <td className="py-2.5 px-3">
+                      {test.sampleType ? (
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getSampleTypeBadgeClass(test.sampleType)}`}
+                        >
+                          {test.sampleType}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-muted-foreground">
+                      {test.unit}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {editingRangeCode === test.code ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={editRange}
+                            onChange={(e) => setEditRange(e.target.value)}
+                            className="h-7 w-28 text-sm"
+                            autoFocus
+                            placeholder="e.g. < 5"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter")
+                                handleSaveRange(test.code, test.referenceRange);
+                              if (e.key === "Escape") {
                                 setEditingRangeCode(null);
                                 setEditRange("");
-                              }}
-                            >
-                              ✕
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 group">
-                            <span className="text-muted-foreground text-xs">
-                              {test.referenceRange ? (
-                                test.referenceRange
-                              ) : (
-                                <span className="italic">Set range</span>
-                              )}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => {
-                                setEditingRangeCode(test.code);
-                                setEditRange(test.referenceRange);
-                              }}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        {editingCode === test.code ? (
-                          <div className="flex items-center justify-end gap-1">
-                            <Input
-                              type="number"
-                              min={0}
-                              value={editPrice}
-                              onChange={(e) => setEditPrice(e.target.value)}
-                              className="h-7 w-24 text-sm text-right"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter")
-                                  handleSavePrice(test.code);
-                                if (e.key === "Escape") {
-                                  setEditingCode(null);
-                                  setEditPrice("");
-                                }
-                              }}
-                            />
-                            <Button
-                              size="sm"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => handleSavePrice(test.code)}
-                              disabled={updatePrice.isPending}
-                            >
-                              {updatePrice.isPending ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                "Save"
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => {
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() =>
+                              handleSaveRange(test.code, test.referenceRange)
+                            }
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => {
+                              setEditingRangeCode(null);
+                              setEditRange("");
+                            }}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 group">
+                          <span className="text-muted-foreground text-xs">
+                            {test.referenceRange || (
+                              <span className="italic">Set range</span>
+                            )}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              setEditingRangeCode(test.code);
+                              setEditRange(test.referenceRange);
+                            }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right">
+                      {editingCode === test.code ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editPrice}
+                            onChange={(e) => setEditPrice(e.target.value)}
+                            className="h-7 w-24 text-sm text-right"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSavePrice(test.code);
+                              if (e.key === "Escape") {
                                 setEditingCode(null);
                                 setEditPrice("");
-                              }}
-                            >
-                              ✕
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-end gap-2 group">
-                            <span className="font-semibold">
-                              {Number(test.price) === 0 ? (
-                                <span className="text-muted-foreground text-xs italic">
-                                  Set price
-                                </span>
-                              ) : (
-                                `₹${Number(test.price)}`
-                              )}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => {
-                                setEditingCode(test.code);
-                                setEditPrice(String(Number(test.price)));
-                              }}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredTests.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="py-10 text-center text-muted-foreground"
-                        data-ocid="catalog.empty_state"
-                      >
-                        {searchQuery
-                          ? "No matching tests found."
-                          : "No tests found."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => handleSavePrice(test.code)}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => {
+                              setEditingCode(null);
+                              setEditPrice("");
+                            }}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-2 group">
+                          <span className="font-semibold">
+                            {Number(test.price) === 0 ? (
+                              <span className="text-muted-foreground text-xs italic">
+                                Set price
+                              </span>
+                            ) : (
+                              `₹${Number(test.price)}`
+                            )}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              setEditingCode(test.code);
+                              setEditPrice(String(Number(test.price)));
+                            }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {filteredTests.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="py-10 text-center text-muted-foreground"
+                      data-ocid="catalog.empty_state"
+                    >
+                      {searchQuery
+                        ? "No matching tests found."
+                        : "No tests found."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
     </div>

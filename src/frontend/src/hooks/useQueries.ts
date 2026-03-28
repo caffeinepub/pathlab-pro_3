@@ -12,6 +12,7 @@ import type {
   TestReportInput,
   TestResult,
 } from "../backend.d";
+import { SAMPLE_TEST_CATALOG } from "../lib/constants";
 import { useActor } from "./useActor";
 
 export function useDashboardStats() {
@@ -47,18 +48,20 @@ export function usePatients() {
 }
 
 export function useTestCatalog() {
-  const { actor, isFetching } = useActor();
+  const { actor } = useActor();
   return useQuery({
     queryKey: ["testCatalog"],
     queryFn: async () => {
-      if (!actor) return [];
+      if (!actor) return SAMPLE_TEST_CATALOG;
       try {
-        return await actor.getAllTestCatalog();
+        const backendTests = await actor.getAllTestCatalog();
+        return backendTests.length > 0 ? backendTests : SAMPLE_TEST_CATALOG;
       } catch {
-        return [];
+        return SAMPLE_TEST_CATALOG;
       }
     },
-    enabled: !!actor && !isFetching,
+    enabled: true,
+    staleTime: 60000,
   });
 }
 
@@ -297,7 +300,12 @@ export function useSeedTestCatalog() {
   return useMutation({
     mutationFn: async (tests: TestCatalogInput[]) => {
       if (!actor) throw new Error("No actor");
-      await Promise.all(tests.map((t) => actor.addTestCatalog(t)));
+      // Seed in batches of 5 to avoid overwhelming ICP
+      const batchSize = 5;
+      for (let i = 0; i < tests.length; i += batchSize) {
+        const batch = tests.slice(i, i + batchSize);
+        await Promise.all(batch.map((t) => actor.addTestCatalog(t)));
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["testCatalog"] });

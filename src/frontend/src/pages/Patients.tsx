@@ -24,6 +24,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
+  Copy,
   History,
   LogIn,
   Plus,
@@ -39,8 +40,10 @@ import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useAddPatient,
+  useCreateTestReport,
   usePatientReports,
   usePatients,
+  useTestCatalog,
 } from "../hooks/useQueries";
 
 // ─── Patient History Dialog ───────────────────────────────────────────────────
@@ -79,10 +82,9 @@ function PatientHistoryDialog({
     });
 
   const flagColor = (result: string, ref: string) => {
-    // Try to parse numeric value and compare against range like "4.5 - 11.0"
     const num = Number.parseFloat(result);
     if (Number.isNaN(num) || !ref) return "normal";
-    const rangeParts = ref.match(/([\d.]+)\s*[-–]\s*([\d.]+)/);
+    const rangeParts = ref.match(/([\d.]+)\s*[-\u2013]\s*([\d.]+)/);
     if (!rangeParts) return "normal";
     const lo = Number.parseFloat(rangeParts[1]);
     const hi = Number.parseFloat(rangeParts[2]);
@@ -189,85 +191,56 @@ function PatientHistoryDialog({
                               Completed
                             </Badge>
                           ) : (
-                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1">
-                              <Clock className="h-3 w-3" />
-                              Pending
-                            </Badge>
+                            <Badge variant="secondary">{report.status}</Badge>
                           )}
                         </div>
                       </CardHeader>
                       <CardContent className="px-4 pb-3">
                         {report.results && report.results.length > 0 ? (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                              <thead>
-                                <tr className="border-b border-border/50">
-                                  <th className="text-left py-1.5 pr-3 text-muted-foreground font-medium">
-                                    Test
-                                  </th>
-                                  <th className="text-left py-1.5 pr-3 text-muted-foreground font-medium">
-                                    Result
-                                  </th>
-                                  <th className="text-left py-1.5 pr-3 text-muted-foreground font-medium">
-                                    Unit
-                                  </th>
-                                  <th className="text-left py-1.5 pr-3 text-muted-foreground font-medium">
-                                    Reference Range
-                                  </th>
-                                  <th className="text-left py-1.5 text-muted-foreground font-medium">
-                                    Status
-                                  </th>
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-border/50">
+                                <th className="text-left py-1 text-muted-foreground font-medium">
+                                  Test
+                                </th>
+                                <th className="text-left py-1 text-muted-foreground font-medium">
+                                  Result
+                                </th>
+                                <th className="text-left py-1 text-muted-foreground font-medium">
+                                  Range
+                                </th>
+                                <th className="text-left py-1 text-muted-foreground font-medium">
+                                  Flag
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {report.results.map((r) => (
+                                <tr
+                                  key={r.code}
+                                  className="border-b border-border/30"
+                                >
+                                  <td className="py-1 pr-3 font-medium">
+                                    {r.code}
+                                  </td>
+                                  <td className="py-1 pr-3">
+                                    {r.result} {r.unit}
+                                  </td>
+                                  <td className="py-1 pr-3 text-muted-foreground">
+                                    {r.referenceRange}
+                                  </td>
+                                  <td className="py-1">
+                                    {flagBadge(
+                                      flagColor(r.result, r.referenceRange),
+                                    )}
+                                  </td>
                                 </tr>
-                              </thead>
-                              <tbody>
-                                {report.results.map((r) => {
-                                  const flag = flagColor(
-                                    r.result,
-                                    r.referenceRange,
-                                  );
-                                  return (
-                                    <tr
-                                      key={`result-${r.code}`}
-                                      className="border-b border-border/30 last:border-0"
-                                    >
-                                      <td className="py-1.5 pr-3 font-medium">
-                                        {r.code}
-                                      </td>
-                                      <td
-                                        className={`py-1.5 pr-3 font-semibold ${
-                                          flag === "high"
-                                            ? "text-red-600"
-                                            : flag === "low"
-                                              ? "text-blue-600"
-                                              : "text-green-700"
-                                        }`}
-                                      >
-                                        {r.result || "—"}
-                                      </td>
-                                      <td className="py-1.5 pr-3 text-muted-foreground">
-                                        {r.unit || "—"}
-                                      </td>
-                                      <td className="py-1.5 pr-3 text-muted-foreground">
-                                        {r.referenceRange || "—"}
-                                      </td>
-                                      <td className="py-1.5">
-                                        {flagBadge(flag)}
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
+                              ))}
+                            </tbody>
+                          </table>
                         ) : (
-                          <p className="text-xs text-muted-foreground italic">
-                            Tests: {report.tests.join(", ") || "—"} — Results
-                            pending
-                          </p>
-                        )}
-                        {report.notes && (
-                          <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/30">
-                            Notes: {report.notes}
+                          <p className="text-xs text-muted-foreground">
+                            Tests: {report.tests?.join(", ") || "None"}
                           </p>
                         )}
                       </CardContent>
@@ -282,11 +255,13 @@ function PatientHistoryDialog({
   );
 }
 
-// ─── Main Patients Page ───────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Patients() {
   const { data: patientRecords, isLoading } = usePatients();
+  const { data: testCatalog } = useTestCatalog();
   const addPatient = useAddPatient();
+  const createReport = useCreateTestReport();
   const { actor, isFetching: isActorLoading } = useActor();
   const { login, identity } = useInternetIdentity();
   const [open, setOpen] = useState(false);
@@ -294,12 +269,15 @@ export default function Patients() {
   const [selectedPatientIdx, setSelectedPatientIdx] = useState<number | null>(
     null,
   );
+  const [savedLabId, setSavedLabId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     age: "",
     gender: Gender.male as Gender,
     phone: "",
     address: "",
+    doctorName: "",
+    selectedTests: [] as string[],
   });
 
   const isLoggedIn = !!identity;
@@ -310,6 +288,28 @@ export default function Patients() {
       r.patient.phone.includes(search),
   );
 
+  const toggleTest = (code: string) => {
+    setForm((p) => ({
+      ...p,
+      selectedTests: p.selectedTests.includes(code)
+        ? p.selectedTests.filter((c) => c !== code)
+        : [...p.selectedTests, code],
+    }));
+  };
+
+  const resetForm = () => {
+    setForm({
+      name: "",
+      age: "",
+      gender: Gender.male,
+      phone: "",
+      address: "",
+      doctorName: "",
+      selectedTests: [],
+    });
+    setSavedLabId(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoggedIn) {
@@ -317,30 +317,45 @@ export default function Patients() {
       return;
     }
     try {
-      await addPatient.mutateAsync({
+      const patientId = await addPatient.mutateAsync({
         name: form.name,
         age: form.age ? BigInt(form.age) : undefined,
         gender: form.gender,
         phone: form.phone,
         address: form.address,
       });
-      toast.success("Patient added successfully!");
-      setOpen(false);
-      setForm({
-        name: "",
-        age: "",
-        gender: Gender.male,
-        phone: "",
-        address: "",
-      });
+
+      const labId = `LAB-${String(patientId).padStart(4, "0")}`;
+      setSavedLabId(labId);
+
+      // If tests were selected, create a report automatically
+      if (form.selectedTests.length > 0) {
+        try {
+          await createReport.mutateAsync({
+            patientId,
+            tests: form.selectedTests,
+            notes: "",
+            doctorName: form.doctorName,
+          });
+          toast.success(
+            `Patient registered! Lab ID: ${labId} — ${form.selectedTests.length} test(s) assigned.`,
+          );
+        } catch {
+          toast.success(`Patient registered! Lab ID: ${labId}`);
+          toast.warning(
+            "Tests could not be assigned. Please add them from the Reports page.",
+          );
+        }
+      } else {
+        toast.success(`Patient registered! Lab ID: ${labId}`);
+      }
     } catch {
-      toast.error("Failed to add patient.");
+      toast.error("Failed to add patient. Please try again.");
     }
   };
 
   const selectedRecord =
     selectedPatientIdx !== null ? (filtered[selectedPatientIdx] ?? null) : null;
-  // IDs are 1-based sequential sorted by createdAt; find original index in full list
   const selectedOriginalIdx =
     selectedRecord !== null && patientRecords
       ? patientRecords.findIndex(
@@ -366,10 +381,7 @@ export default function Patients() {
             Sign In Zaroori Hai
           </AlertTitle>
           <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-            <span>
-              Patient data save karne ke liye pehle Sign In karein. Bina login
-              ke patient add nahi hoga.
-            </span>
+            <span>Patient data save karne ke liye pehle Sign In karein.</span>
             <Button
               size="sm"
               variant="outline"
@@ -392,113 +404,289 @@ export default function Patients() {
           </p>
         </div>
         {isLoggedIn ? (
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={open}
+            onOpenChange={(v) => {
+              setOpen(v);
+              if (!v) resetForm();
+            }}
+          >
             <DialogTrigger asChild>
               <Button data-ocid="patients.open_modal_button">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Patient
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg" data-ocid="patients.dialog">
+            <DialogContent
+              className="max-w-2xl max-h-[90vh] flex flex-col"
+              data-ocid="patients.dialog"
+            >
               <DialogHeader>
-                <DialogTitle>Add New Patient</DialogTitle>
+                <DialogTitle>New Patient Registration</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2 space-y-1.5">
-                    <Label htmlFor="pat-name">Full Name *</Label>
-                    <Input
-                      id="pat-name"
-                      value={form.name}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, name: e.target.value }))
-                      }
-                      placeholder="e.g. Rajesh Kumar Sharma"
-                      required
-                      data-ocid="patients.input"
-                    />
+
+              {savedLabId ? (
+                /* ── Success State ── */
+                <div
+                  className="flex flex-col items-center gap-4 py-6"
+                  data-ocid="patients.success_state"
+                >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+                    <CheckCircle2 className="h-8 w-8 text-green-600" />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pat-age">Age *</Label>
-                    <Input
-                      id="pat-age"
-                      type="number"
-                      min={0}
-                      max={150}
-                      value={form.age}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, age: e.target.value }))
-                      }
-                      placeholder="35"
-                      required
-                    />
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-foreground">
+                      Patient Registered!
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Lab ID generated successfully
+                    </p>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pat-gender">Gender *</Label>
-                    <Select
-                      value={form.gender}
-                      onValueChange={(v) =>
-                        setForm((p) => ({ ...p, gender: v as Gender }))
-                      }
+                  <div className="flex items-center gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 px-6 py-3">
+                    <span className="text-2xl font-bold tracking-widest text-primary">
+                      {savedLabId}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(savedLabId);
+                        toast.success("Lab ID copied!");
+                      }}
                     >
-                      <SelectTrigger
-                        id="pat-gender"
-                        data-ocid="patients.select"
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSavedLabId(null);
+                        resetForm();
+                      }}
+                    >
+                      Add Another Patient
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setOpen(false);
+                        resetForm();
+                      }}
+                    >
+                      Done
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                /* ── Registration Form ── */
+                <ScrollArea className="flex-1">
+                  <form onSubmit={handleSubmit} className="space-y-5 px-1 pb-4">
+                    {/* Patient Details */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                        Patient Details
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2 space-y-1.5">
+                          <Label htmlFor="pat-name">Full Name *</Label>
+                          <Input
+                            id="pat-name"
+                            value={form.name}
+                            onChange={(e) =>
+                              setForm((p) => ({ ...p, name: e.target.value }))
+                            }
+                            placeholder="e.g. Rajesh Kumar Sharma"
+                            required
+                            data-ocid="patients.input"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="pat-age">Age *</Label>
+                          <Input
+                            id="pat-age"
+                            type="number"
+                            min={0}
+                            max={150}
+                            value={form.age}
+                            onChange={(e) =>
+                              setForm((p) => ({ ...p, age: e.target.value }))
+                            }
+                            placeholder="35"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="pat-gender">Gender *</Label>
+                          <Select
+                            value={form.gender}
+                            onValueChange={(v) =>
+                              setForm((p) => ({ ...p, gender: v as Gender }))
+                            }
+                          >
+                            <SelectTrigger
+                              id="pat-gender"
+                              data-ocid="patients.select"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={Gender.male}>Male</SelectItem>
+                              <SelectItem value={Gender.female}>
+                                Female
+                              </SelectItem>
+                              <SelectItem value={Gender.other}>
+                                Other
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-2 space-y-1.5">
+                          <Label htmlFor="pat-phone">Phone *</Label>
+                          <Input
+                            id="pat-phone"
+                            value={form.phone}
+                            onChange={(e) =>
+                              setForm((p) => ({ ...p, phone: e.target.value }))
+                            }
+                            placeholder="+91 98765 43210"
+                            required
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-1.5">
+                          <Label htmlFor="pat-address">Address</Label>
+                          <Input
+                            id="pat-address"
+                            value={form.address}
+                            onChange={(e) =>
+                              setForm((p) => ({
+                                ...p,
+                                address: e.target.value,
+                              }))
+                            }
+                            placeholder="Mumbai, Maharashtra"
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-1.5">
+                          <Label htmlFor="pat-doctor">Referring Doctor</Label>
+                          <Input
+                            id="pat-doctor"
+                            value={form.doctorName}
+                            onChange={(e) =>
+                              setForm((p) => ({
+                                ...p,
+                                doctorName: e.target.value,
+                              }))
+                            }
+                            placeholder="Dr. Suresh Patel"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Test Selection */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                        Assign Tests
+                      </h3>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {form.selectedTests.length === 0
+                          ? "No tests selected (you can add tests later from Reports)"
+                          : `${form.selectedTests.length} test(s) selected`}
+                      </p>
+                      {!testCatalog || testCatalog.length === 0 ? (
+                        <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                          Test catalog empty. Go to{" "}
+                          <strong>Test Catalog</strong> and click "Reload
+                          Standard Tests" first.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto rounded-md border border-border p-2">
+                          {testCatalog.map((test) => {
+                            const isSelected = form.selectedTests.includes(
+                              test.code,
+                            );
+                            return (
+                              <button
+                                key={test.code}
+                                type="button"
+                                onClick={() => toggleTest(test.code)}
+                                className={`flex items-start gap-2 rounded-md border px-2.5 py-2 text-left text-xs transition-colors ${
+                                  isSelected
+                                    ? "border-primary bg-primary/10 text-primary"
+                                    : "border-border hover:bg-muted/50"
+                                }`}
+                              >
+                                <span
+                                  className={`mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border ${
+                                    isSelected
+                                      ? "border-primary bg-primary"
+                                      : "border-muted-foreground/40"
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <svg
+                                      aria-hidden="true"
+                                      className="h-2.5 w-2.5 text-primary-foreground"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                      strokeWidth={3}
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M5 13l4 4L19 7"
+                                      />
+                                    </svg>
+                                  )}
+                                </span>
+                                <span className="leading-tight">
+                                  <span className="font-medium">
+                                    {test.name}
+                                  </span>
+                                  <span className="block text-muted-foreground">
+                                    ₹{Number(test.price)}
+                                  </span>
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setOpen(false);
+                          resetForm();
+                        }}
+                        data-ocid="patients.cancel_button"
                       >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={Gender.male}>Male</SelectItem>
-                        <SelectItem value={Gender.female}>Female</SelectItem>
-                        <SelectItem value={Gender.other}>Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-2 space-y-1.5">
-                    <Label htmlFor="pat-phone">Phone *</Label>
-                    <Input
-                      id="pat-phone"
-                      value={form.phone}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, phone: e.target.value }))
-                      }
-                      placeholder="+91 98765 43210"
-                      required
-                    />
-                  </div>
-                  <div className="col-span-2 space-y-1.5">
-                    <Label htmlFor="pat-address">Address</Label>
-                    <Input
-                      id="pat-address"
-                      value={form.address}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, address: e.target.value }))
-                      }
-                      placeholder="Mumbai, Maharashtra"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                    data-ocid="patients.cancel_button"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={addPatient.isPending || isActorLoading || !actor}
-                    data-ocid="patients.submit_button"
-                  >
-                    {addPatient.isPending && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
-                    Save Patient
-                  </Button>
-                </div>
-              </form>
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={
+                          addPatient.isPending ||
+                          createReport.isPending ||
+                          isActorLoading ||
+                          !actor
+                        }
+                        data-ocid="patients.submit_button"
+                      >
+                        {(addPatient.isPending || createReport.isPending) && (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        )}
+                        Register Patient
+                      </Button>
+                    </div>
+                  </form>
+                </ScrollArea>
+              )}
             </DialogContent>
           </Dialog>
         ) : (
@@ -550,6 +738,9 @@ export default function Patients() {
                       #
                     </th>
                     <th className="text-left py-2 px-3 text-muted-foreground font-medium">
+                      Lab ID
+                    </th>
+                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">
                       Name
                     </th>
                     <th className="text-left py-2 px-3 text-muted-foreground font-medium">
@@ -570,46 +761,67 @@ export default function Patients() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((record, idx) => (
-                    <tr
-                      key={`${record.patient.phone}-${record.createdAt}`}
-                      className="border-b border-border/50 hover:bg-muted/30"
-                      data-ocid={`patients.item.${idx + 1}`}
-                    >
-                      <td className="py-2.5 px-3 text-muted-foreground">
-                        {idx + 1}
-                      </td>
-                      <td className="py-2.5 px-3 font-medium">
-                        {record.patient.name}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        {Number(record.patient.age)}
-                      </td>
-                      <td className="py-2.5 px-3 capitalize">
-                        {record.patient.gender}
-                      </td>
-                      <td className="py-2.5 px-3">{record.patient.phone}</td>
-                      <td className="py-2.5 px-3 text-muted-foreground">
-                        {record.patient.address || "—"}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 gap-1 text-xs"
-                          onClick={() => setSelectedPatientIdx(idx)}
-                          data-ocid={`patients.edit_button.${idx + 1}`}
-                        >
-                          <History className="h-3.5 w-3.5" />
-                          History
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filtered.map((record, idx) => {
+                    const origIdx = patientRecords
+                      ? patientRecords.findIndex(
+                          (r) =>
+                            r.createdAt === record.createdAt &&
+                            r.patient.phone === record.patient.phone,
+                        )
+                      : -1;
+                    const labId =
+                      origIdx >= 0
+                        ? `LAB-${String(origIdx + 1).padStart(4, "0")}`
+                        : "—";
+                    return (
+                      <tr
+                        key={`${record.patient.phone}-${record.createdAt}`}
+                        className="border-b border-border/50 hover:bg-muted/30"
+                        data-ocid={`patients.item.${idx + 1}`}
+                      >
+                        <td className="py-2.5 px-3 text-muted-foreground">
+                          {idx + 1}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-xs"
+                          >
+                            {labId}
+                          </Badge>
+                        </td>
+                        <td className="py-2.5 px-3 font-medium">
+                          {record.patient.name}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {Number(record.patient.age)}
+                        </td>
+                        <td className="py-2.5 px-3 capitalize">
+                          {record.patient.gender}
+                        </td>
+                        <td className="py-2.5 px-3">{record.patient.phone}</td>
+                        <td className="py-2.5 px-3 text-muted-foreground">
+                          {record.patient.address || "—"}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 gap-1 text-xs"
+                            onClick={() => setSelectedPatientIdx(idx)}
+                            data-ocid={`patients.edit_button.${idx + 1}`}
+                          >
+                            <History className="h-3.5 w-3.5" />
+                            History
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {filtered.length === 0 && (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={8}
                         className="py-10 text-center text-muted-foreground"
                         data-ocid="patients.empty_state"
                       >
