@@ -18,183 +18,107 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type ApprovalStatus = "Pending Approval" | "Approved" | "Rejected";
 
 interface TestResult {
+  testCode: string;
   testName: string;
   value: string;
   unit: string;
   referenceRange: string;
-  flag: "normal" | "high" | "low" | null;
+  flag?: "normal" | "high" | "low" | null;
 }
 
 interface ApprovalReport {
   id: string;
   patientName: string;
-  age: string;
-  gender: string;
+  sampleId: string;
+  sampleType: string;
+  collectionDate: string;
   testCount: number;
-  technician: string;
-  date: string;
   status: ApprovalStatus;
   approvedAt?: string;
   rejectedReason?: string;
   tests: TestResult[];
 }
 
-const INITIAL_REPORTS: ApprovalReport[] = [
-  {
-    id: "RPT-005",
-    patientName: "Vikram Singh",
-    age: "38",
-    gender: "Male",
-    testCount: 3,
-    technician: "Anil Verma",
-    date: "2026-03-28",
-    status: "Pending Approval",
-    tests: [
-      {
-        testName: "TSH",
-        value: "6.8",
-        unit: "\u00b5IU/mL",
-        referenceRange: "0.4 - 4.0",
-        flag: "high",
-      },
-      {
-        testName: "T3",
-        value: "145",
-        unit: "ng/dL",
-        referenceRange: "80 - 200",
-        flag: "normal",
-      },
-      {
-        testName: "T4",
-        value: "9.2",
-        unit: "\u00b5g/dL",
-        referenceRange: "5.1 - 14.1",
-        flag: "normal",
-      },
-    ],
-  },
-  {
-    id: "RPT-006",
-    patientName: "Kavya Reddy",
-    age: "24",
-    gender: "Female",
-    testCount: 4,
-    technician: "Renu Gupta",
-    date: "2026-03-28",
-    status: "Pending Approval",
-    tests: [
-      {
-        testName: "Hemoglobin",
-        value: "10.2",
-        unit: "g/dL",
-        referenceRange: "12.0 - 16.0",
-        flag: "low",
-      },
-      {
-        testName: "WBC Count",
-        value: "8.4",
-        unit: "\u00d710\u00b3/\u00b5L",
-        referenceRange: "4.5 - 11.0",
-        flag: "normal",
-      },
-      {
-        testName: "Platelet Count",
-        value: "320",
-        unit: "\u00d710\u00b3/\u00b5L",
-        referenceRange: "150 - 400",
-        flag: "normal",
-      },
-      {
-        testName: "MCV",
-        value: "72",
-        unit: "fL",
-        referenceRange: "80 - 100",
-        flag: "low",
-      },
-    ],
-  },
-  {
-    id: "RPT-007",
-    patientName: "Manish Jain",
-    age: "55",
-    gender: "Male",
-    testCount: 4,
-    technician: "Anil Verma",
-    date: "2026-03-27",
-    status: "Approved",
-    approvedAt: "2026-03-27 14:30",
-    tests: [
-      {
-        testName: "SGOT",
-        value: "38",
-        unit: "U/L",
-        referenceRange: "10 - 40",
-        flag: "normal",
-      },
-      {
-        testName: "SGPT",
-        value: "65",
-        unit: "U/L",
-        referenceRange: "7 - 56",
-        flag: "high",
-      },
-      {
-        testName: "Total Bilirubin",
-        value: "1.0",
-        unit: "mg/dL",
-        referenceRange: "0.3 - 1.2",
-        flag: "normal",
-      },
-      {
-        testName: "Albumin",
-        value: "4.2",
-        unit: "g/dL",
-        referenceRange: "3.5 - 5.0",
-        flag: "normal",
-      },
-    ],
-  },
-  {
-    id: "RPT-008",
-    patientName: "Pooja Nair",
-    age: "31",
-    gender: "Female",
-    testCount: 3,
-    technician: "Renu Gupta",
-    date: "2026-03-27",
-    status: "Rejected",
-    rejectedReason: "Sample hemolyzed, recollect required",
-    tests: [
-      {
-        testName: "Creatinine",
-        value: "1.8",
-        unit: "mg/dL",
-        referenceRange: "0.5 - 1.1",
-        flag: "high",
-      },
-      {
-        testName: "BUN",
-        value: "28",
-        unit: "mg/dL",
-        referenceRange: "7 - 20",
-        flag: "high",
-      },
-      {
-        testName: "Uric Acid",
-        value: "5.2",
-        unit: "mg/dL",
-        referenceRange: "2.6 - 6.0",
-        flag: "normal",
-      },
-    ],
-  },
-];
+const APPROVAL_STORAGE_KEY = "pathlab_approvals";
+
+function parseRange(
+  range: string,
+  value: string,
+): "normal" | "high" | "low" | null {
+  const num = Number.parseFloat(value);
+  if (Number.isNaN(num) || !value.trim()) return null;
+  const ltMatch = range.match(/^<\s*([\d.]+)/);
+  if (ltMatch) return num < Number.parseFloat(ltMatch[1]) ? "normal" : "high";
+  const gtMatch = range.match(/^>\s*([\d.]+)/);
+  if (gtMatch) return num > Number.parseFloat(gtMatch[1]) ? "normal" : "low";
+  const rangeMatch = range.match(/^([\d.]+)\s*-\s*([\d.]+)/);
+  if (rangeMatch) {
+    const lo = Number.parseFloat(rangeMatch[1]);
+    const hi = Number.parseFloat(rangeMatch[2]);
+    if (num < lo) return "low";
+    if (num > hi) return "high";
+    return "normal";
+  }
+  return null;
+}
+
+function loadFromResultEntry(): ApprovalReport[] {
+  try {
+    const raw = localStorage.getItem("pathlab_results");
+    if (!raw) return [];
+    const results = JSON.parse(raw) as {
+      id: string;
+      sampleId: string;
+      patientName: string;
+      sampleType: string;
+      collectionDate: string;
+      status: string;
+      tests: TestResult[];
+    }[];
+    return results
+      .filter((r) => r.status === "Ready for Approval")
+      .map((r) => ({
+        id: r.id,
+        patientName: r.patientName,
+        sampleId: r.sampleId,
+        sampleType: r.sampleType,
+        collectionDate: r.collectionDate,
+        testCount: r.tests.length,
+        status: "Pending Approval" as ApprovalStatus,
+        tests: r.tests,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function loadSavedApprovals(): Record<
+  string,
+  { status: ApprovalStatus; approvedAt?: string; rejectedReason?: string }
+> {
+  try {
+    const raw = localStorage.getItem(APPROVAL_STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function saveApprovals(
+  data: Record<
+    string,
+    { status: ApprovalStatus; approvedAt?: string; rejectedReason?: string }
+  >,
+) {
+  localStorage.setItem(APPROVAL_STORAGE_KEY, JSON.stringify(data));
+}
 
 const statusBadge: Record<ApprovalStatus, string> = {
   "Pending Approval": "bg-amber-100 text-amber-700 border-amber-200",
@@ -203,23 +127,34 @@ const statusBadge: Record<ApprovalStatus, string> = {
 };
 
 export default function Approval() {
-  const [reports, setReports] = useState<ApprovalReport[]>(INITIAL_REPORTS);
+  const [reports, setReports] = useState<ApprovalReport[]>([]);
   const [reviewReport, setReviewReport] = useState<ApprovalReport | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
+  useEffect(() => {
+    const fresh = loadFromResultEntry();
+    const saved = loadSavedApprovals();
+    const merged = fresh.map((r) => {
+      const override = saved[r.id];
+      if (override) return { ...r, ...override };
+      return r;
+    });
+    setReports(merged);
+  }, []);
+
   const handleApprove = (id: string) => {
+    const approvedAt = new Date().toLocaleString("en-IN");
     setReports((prev) =>
       prev.map((r) =>
         r.id === id
-          ? {
-              ...r,
-              status: "Approved",
-              approvedAt: new Date().toLocaleString("en-IN"),
-            }
+          ? { ...r, status: "Approved" as ApprovalStatus, approvedAt }
           : r,
       ),
     );
+    const saved = loadSavedApprovals();
+    saved[id] = { status: "Approved", approvedAt };
+    saveApprovals(saved);
     setReviewReport(null);
     toast.success("Report approved successfully");
   };
@@ -229,10 +164,17 @@ export default function Approval() {
     setReports((prev) =>
       prev.map((r) =>
         r.id === id
-          ? { ...r, status: "Rejected", rejectedReason: rejectReason }
+          ? {
+              ...r,
+              status: "Rejected" as ApprovalStatus,
+              rejectedReason: rejectReason,
+            }
           : r,
       ),
     );
+    const saved = loadSavedApprovals();
+    saved[id] = { status: "Rejected", rejectedReason: rejectReason };
+    saveApprovals(saved);
     setReviewReport(null);
     setRejectOpen(false);
     setRejectReason("");
@@ -252,73 +194,89 @@ export default function Approval() {
 
       <Card className="rounded-xl border border-border shadow-sm">
         <CardContent className="p-0">
-          <Table data-ocid="approval.table">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Report ID</TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Tests</TableHead>
-                <TableHead>Technician</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {reports.map((report, idx) => (
-                <TableRow key={report.id} data-ocid={`approval.row.${idx + 1}`}>
-                  <TableCell className="font-mono text-sm font-medium">
-                    {report.id}
-                  </TableCell>
-                  <TableCell>
-                    <div>
+          {reports.length === 0 ? (
+            <div
+              className="text-center py-16 text-muted-foreground"
+              data-ocid="approval.empty_state"
+            >
+              Koi report approval ke liye nahi hai. Result Entry mein results
+              dalkar "Mark Ready for Approval" click karein.
+            </div>
+          ) : (
+            <Table data-ocid="approval.table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Report ID</TableHead>
+                  <TableHead>Patient</TableHead>
+                  <TableHead>Tests</TableHead>
+                  <TableHead>Sample Type</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reports.map((report, idx) => (
+                  <TableRow
+                    key={report.id}
+                    data-ocid={`approval.row.${idx + 1}`}
+                  >
+                    <TableCell className="font-mono text-sm font-medium">
+                      {report.id}
+                    </TableCell>
+                    <TableCell>
                       <p className="font-medium text-sm">
                         {report.patientName}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {report.age}y {report.gender}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {report.testCount} tests
-                  </TableCell>
-                  <TableCell className="text-sm">{report.technician}</TableCell>
-                  <TableCell className="text-sm">{report.date}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusBadge[report.status]}`}
-                    >
-                      {report.status}
-                    </span>
-                    {report.approvedAt && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {report.approvedAt}
-                      </p>
-                    )}
-                    {report.rejectedReason && (
-                      <p
-                        className="text-xs text-red-500 mt-1 max-w-[150px] truncate"
-                        title={report.rejectedReason}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {report.testCount} tests
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {report.sampleType}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {report.collectionDate
+                        ? new Date(report.collectionDate).toLocaleDateString(
+                            "en-IN",
+                          )
+                        : "-"}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusBadge[report.status]}`}
                       >
-                        {report.rejectedReason}
-                      </p>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setReviewReport(report)}
-                      data-ocid={`approval.review.button.${idx + 1}`}
-                    >
-                      Review
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                        {report.status}
+                      </span>
+                      {report.approvedAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {report.approvedAt}
+                        </p>
+                      )}
+                      {report.rejectedReason && (
+                        <p
+                          className="text-xs text-red-500 mt-1 max-w-[150px] truncate"
+                          title={report.rejectedReason}
+                        >
+                          {report.rejectedReason}
+                        </p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setReviewReport(report)}
+                        data-ocid={`approval.review.button.${idx + 1}`}
+                      >
+                        Review
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -328,8 +286,7 @@ export default function Approval() {
           <DialogHeader>
             <DialogTitle>Review Report — {reviewReport?.id}</DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {reviewReport?.patientName} · {reviewReport?.age}y{" "}
-              {reviewReport?.gender}
+              {reviewReport?.patientName}
             </p>
           </DialogHeader>
           {reviewReport && (
@@ -344,12 +301,12 @@ export default function Approval() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reviewReport.tests.map((test) => {
-                  const isAbnormal =
-                    test.flag === "high" || test.flag === "low";
+                {reviewReport.tests.map((test, tIdx) => {
+                  const flag = parseRange(test.referenceRange, test.value);
+                  const isAbnormal = flag === "high" || flag === "low";
                   return (
                     <TableRow
-                      key={test.testName}
+                      key={`${test.testCode}-${tIdx}`}
                       className={isAbnormal ? "bg-red-50" : ""}
                     >
                       <TableCell className="font-medium text-sm">
@@ -358,27 +315,27 @@ export default function Approval() {
                       <TableCell
                         className={`text-sm font-semibold ${isAbnormal ? "text-red-600" : ""}`}
                       >
-                        {test.value}
+                        {test.value || "-"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {test.unit}
+                        {test.unit || "-"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {test.referenceRange}
+                        {test.referenceRange || "-"}
                       </TableCell>
                       <TableCell>
                         {isAbnormal && (
                           <Badge
                             className={
-                              test.flag === "high"
+                              flag === "high"
                                 ? "bg-red-100 text-red-700 border-red-200"
                                 : "bg-blue-100 text-blue-700 border-blue-200"
                             }
                           >
-                            {test.flag === "high" ? "H" : "L"}
+                            {flag === "high" ? "H" : "L"}
                           </Badge>
                         )}
-                        {test.flag === "normal" && (
+                        {flag === "normal" && (
                           <Badge className="bg-green-100 text-green-700 border-green-200">
                             N
                           </Badge>
