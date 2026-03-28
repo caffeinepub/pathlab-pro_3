@@ -37,7 +37,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Gender } from "../backend";
 import type { PatientId } from "../backend.d";
-import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useAddPatient,
@@ -264,7 +263,7 @@ export default function Patients() {
   const { data: testCatalog } = useTestCatalog();
   const addPatient = useAddPatient();
   const createReport = useCreateTestReport();
-  const { actor, isFetching: isActorLoading } = useActor();
+
   const { login, identity } = useInternetIdentity();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -694,10 +693,7 @@ export default function Patients() {
                       <Button
                         type="submit"
                         disabled={
-                          addPatient.isPending ||
-                          createReport.isPending ||
-                          isActorLoading ||
-                          !actor
+                          addPatient.isPending || createReport.isPending
                         }
                         data-ocid="patients.submit_button"
                       >

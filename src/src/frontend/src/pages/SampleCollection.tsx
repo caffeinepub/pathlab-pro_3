@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,42 +18,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Beaker, Printer, QrCode } from "lucide-react";
-import { useState } from "react";
+import { Beaker, Info, Printer, QrCode } from "lucide-react";
+import { useEffect, useState } from "react";
+import { SAMPLE_TEST_CATALOG } from "../lib/constants";
+import {
+  type StoredPatient,
+  type StoredSample,
+  getStoredPatients,
+  getStoredSamples,
+  saveStoredSample,
+  updateSampleStatus,
+} from "../lib/patientStorage";
 
-type SampleStatus = "Pending" | "Collected" | "In-Process" | "Completed";
-
-interface Sample {
-  id: string;
-  orderId: string;
-  patientName: string;
-  tests: string[];
-  sampleType: string;
-  barcode: string;
-  timestamp: string;
-  status: SampleStatus;
-}
-
-const MOCK_PATIENTS = [
-  { id: "P001", name: "Rahul Sharma" },
-  { id: "P002", name: "Priya Patel" },
-  { id: "P003", name: "Amit Kumar" },
-  { id: "P004", name: "Sunita Devi" },
-  { id: "P005", name: "Vikram Singh" },
-];
-
-const MOCK_TESTS = [
-  "CBC",
-  "LFT",
-  "KFT",
-  "Thyroid (TFT)",
-  "Lipid Profile",
-  "HbA1c",
-  "Blood Sugar (FBS)",
-  "Urine Routine",
-  "Dengue NS1",
-  "HBsAg",
-];
+type SampleStatus = StoredSample["status"];
 
 const SAMPLE_TYPES = [
   "Blood (Serum)",
@@ -84,112 +62,21 @@ const STATUS_ORDER: SampleStatus[] = [
   "Completed",
 ];
 
-const INITIAL_SAMPLES: Sample[] = [
-  {
-    id: "1",
-    orderId: "SAM-001",
-    patientName: "Rahul Sharma",
-    tests: ["CBC", "LFT"],
-    sampleType: "Blood (EDTA)",
-    barcode: "SAM-001-2024",
-    timestamp: "2026-03-28 08:15",
-    status: "Pending",
-  },
-  {
-    id: "2",
-    orderId: "SAM-002",
-    patientName: "Priya Patel",
-    tests: ["Thyroid (TFT)", "HbA1c"],
-    sampleType: "Blood (Serum)",
-    barcode: "SAM-002-2024",
-    timestamp: "2026-03-28 09:00",
-    status: "Collected",
-  },
-  {
-    id: "3",
-    orderId: "SAM-003",
-    patientName: "Amit Kumar",
-    tests: ["KFT", "Lipid Profile"],
-    sampleType: "Blood (Serum)",
-    barcode: "SAM-003-2024",
-    timestamp: "2026-03-28 09:30",
-    status: "In-Process",
-  },
-  {
-    id: "4",
-    orderId: "SAM-004",
-    patientName: "Sunita Devi",
-    tests: ["Urine Routine"],
-    sampleType: "Urine",
-    barcode: "SAM-004-2024",
-    timestamp: "2026-03-28 10:00",
-    status: "Completed",
-  },
-  {
-    id: "5",
-    orderId: "SAM-005",
-    patientName: "Vikram Singh",
-    tests: ["Dengue NS1", "CBC"],
-    sampleType: "Blood (EDTA)",
-    barcode: "SAM-005-2024",
-    timestamp: "2026-03-28 10:30",
-    status: "Pending",
-  },
-  {
-    id: "6",
-    orderId: "SAM-006",
-    patientName: "Rahul Sharma",
-    tests: ["HBsAg"],
-    sampleType: "Blood (Serum)",
-    barcode: "SAM-006-2024",
-    timestamp: "2026-03-28 11:00",
-    status: "Collected",
-  },
-  {
-    id: "7",
-    orderId: "SAM-007",
-    patientName: "Priya Patel",
-    tests: ["Blood Sugar (FBS)", "Lipid Profile"],
-    sampleType: "Blood (Serum)",
-    barcode: "SAM-007-2024",
-    timestamp: "2026-03-28 11:15",
-    status: "In-Process",
-  },
-  {
-    id: "8",
-    orderId: "SAM-008",
-    patientName: "Amit Kumar",
-    tests: ["CBC"],
-    sampleType: "Blood (EDTA)",
-    barcode: "SAM-008-2024",
-    timestamp: "2026-03-28 11:45",
-    status: "Completed",
-  },
-  {
-    id: "9",
-    orderId: "SAM-009",
-    patientName: "Sunita Devi",
-    tests: ["LFT", "KFT"],
-    sampleType: "Blood (Serum)",
-    barcode: "SAM-009-2024",
-    timestamp: "2026-03-28 12:00",
-    status: "Pending",
-  },
-  {
-    id: "10",
-    orderId: "SAM-010",
-    patientName: "Vikram Singh",
-    tests: ["Thyroid (TFT)"],
-    sampleType: "Blood (Serum)",
-    barcode: "SAM-010-2024",
-    timestamp: "2026-03-28 12:30",
-    status: "Completed",
-  },
-];
-
-/** Generates QR code using a free public API — no package needed */
 function qrUrl(data: string) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data)}`;
+}
+
+function getTestName(code: string): string {
+  const found = SAMPLE_TEST_CATALOG.find((t) => t.code === code);
+  return found ? found.name : code;
+}
+
+function getDefaultSampleType(tests: string[]): string {
+  for (const code of tests) {
+    const t = SAMPLE_TEST_CATALOG.find((x) => x.code === code);
+    if (t?.sampleType) return t.sampleType;
+  }
+  return "";
 }
 
 function SampleCard({
@@ -197,9 +84,9 @@ function SampleCard({
   onStatusChange,
   onShowQR,
 }: {
-  sample: Sample;
+  sample: StoredSample;
   onStatusChange: (id: string, status: SampleStatus) => void;
-  onShowQR: (sample: Sample) => void;
+  onShowQR: (sample: StoredSample) => void;
 }) {
   const nextStatus = STATUS_ORDER[STATUS_ORDER.indexOf(sample.status) + 1];
   return (
@@ -213,7 +100,9 @@ function SampleCard({
             <p className="font-semibold text-foreground text-sm">
               {sample.patientName}
             </p>
-            <p className="text-muted-foreground text-xs">{sample.orderId}</p>
+            <p className="text-muted-foreground text-xs">
+              {sample.orderId} · {sample.patientLabId}
+            </p>
           </div>
           <span
             className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusColor[sample.status]}`}
@@ -227,17 +116,19 @@ function SampleCard({
               key={t}
               className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200"
             >
-              {t}
+              {getTestName(t)}
             </span>
           ))}
         </div>
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
-            sampleTypeColor[sample.sampleType] || "bg-gray-100 text-gray-600"
-          }`}
-        >
-          {sample.sampleType}
-        </span>
+        {sample.sampleType && (
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+              sampleTypeColor[sample.sampleType] || "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {sample.sampleType}
+          </span>
+        )}
         <p className="text-xs text-muted-foreground mt-2">{sample.timestamp}</p>
         <div className="flex gap-2 mt-3">
           <Button
@@ -266,28 +157,66 @@ function SampleCard({
 }
 
 export default function SampleCollection() {
-  const [samples, setSamples] = useState<Sample[]>(INITIAL_SAMPLES);
+  const [samples, setSamples] = useState<StoredSample[]>([]);
+  const [patients, setPatients] = useState<StoredPatient[]>([]);
   const [newOpen, setNewOpen] = useState(false);
-  const [qrSample, setQrSample] = useState<Sample | null>(null);
-  const [generatedQR, setGeneratedQR] = useState<Sample | null>(null);
-  const [selectedPatient, setSelectedPatient] = useState("");
+  const [qrSample, setQrSample] = useState<StoredSample | null>(null);
+  const [generatedQR, setGeneratedQR] = useState<StoredSample | null>(null);
+  const [selectedPatientLabId, setSelectedPatientLabId] = useState("");
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState("");
+  const [autoFilled, setAutoFilled] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    setSamples(getStoredSamples());
+    setPatients(getStoredPatients());
+  }, []);
+
+  // Reload patients when dialog opens (catches newly registered patients)
+  useEffect(() => {
+    if (newOpen) {
+      setPatients(getStoredPatients());
+      setSelectedPatientLabId("");
+      setSelectedTests([]);
+      setSelectedType("");
+      setAutoFilled(false);
+    }
+  }, [newOpen]);
+
+  // Auto-fill tests when patient is selected
+  useEffect(() => {
+    if (!selectedPatientLabId) return;
+    const patient = patients.find((p) => p.labId === selectedPatientLabId);
+    if (patient && patient.assignedTests.length > 0) {
+      setSelectedTests(patient.assignedTests);
+      const defaultType = getDefaultSampleType(patient.assignedTests);
+      if (defaultType) setSelectedType(defaultType);
+      setAutoFilled(true);
+    } else {
+      setSelectedTests([]);
+      setAutoFilled(false);
+    }
+  }, [selectedPatientLabId, patients]);
 
   const handleStatusChange = (id: string, status: SampleStatus) => {
+    updateSampleStatus(id, status);
     setSamples((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));
   };
 
   const handleGenerate = () => {
-    if (!selectedPatient || selectedTests.length === 0 || !selectedType) return;
-    const patient = MOCK_PATIENTS.find((p) => p.id === selectedPatient);
+    if (!selectedPatientLabId || selectedTests.length === 0 || !selectedType)
+      return;
+    const patient = patients.find((p) => p.labId === selectedPatientLabId);
     if (!patient) return;
-    const newId = String(samples.length + 1);
-    const orderId = `SAM-${String(samples.length + 1).padStart(3, "0")}`;
-    const barcode = `${orderId}-2026`;
-    const newSample: Sample = {
+    const allSamples = getStoredSamples();
+    const newId = String(Date.now());
+    const orderId = `SAM-${String(allSamples.length + 1).padStart(3, "0")}`;
+    const barcode = `${orderId}-${new Date().getFullYear()}`;
+    const newSample: StoredSample = {
       id: newId,
       orderId,
+      patientLabId: patient.labId,
       patientName: patient.name,
       tests: selectedTests,
       sampleType: selectedType,
@@ -295,19 +224,26 @@ export default function SampleCollection() {
       timestamp: new Date().toLocaleString("en-IN"),
       status: "Pending",
     };
-    setSamples((prev) => [...prev, newSample]);
+    saveStoredSample(newSample);
+    setSamples(getStoredSamples());
     setGeneratedQR(newSample);
     setNewOpen(false);
-    setSelectedPatient("");
+    setSelectedPatientLabId("");
     setSelectedTests([]);
     setSelectedType("");
+    setAutoFilled(false);
   };
 
-  const toggleTest = (test: string) => {
+  const toggleTest = (code: string) => {
+    setAutoFilled(false);
     setSelectedTests((prev) =>
-      prev.includes(test) ? prev.filter((t) => t !== test) : [...prev, test],
+      prev.includes(code) ? prev.filter((t) => t !== code) : [...prev, code],
     );
   };
+
+  const selectedPatient = patients.find(
+    (p) => p.labId === selectedPatientLabId,
+  );
 
   return (
     <div className="space-y-6" data-ocid="samples.page">
@@ -377,32 +313,52 @@ export default function SampleCollection() {
             <DialogTitle>New Sample Registration</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {patients.length === 0 && (
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>
+                  Koi registered patient nahi mila. Pehle Patient Registration
+                  se patient add karein.
+                </span>
+              </div>
+            )}
             <div>
               <Label>Patient</Label>
               <Select
-                value={selectedPatient}
-                onValueChange={setSelectedPatient}
+                value={selectedPatientLabId}
+                onValueChange={setSelectedPatientLabId}
               >
                 <SelectTrigger
                   className="mt-1"
                   data-ocid="samples.patient.select"
                 >
-                  <SelectValue placeholder="Select patient" />
+                  <SelectValue placeholder="Patient chunein" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MOCK_PATIENTS.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
+                  {patients.map((p) => (
+                    <SelectItem key={p.labId} value={p.labId}>
+                      {p.labId} — {p.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {autoFilled && selectedPatient && (
+              <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg p-2.5 text-sm text-blue-800">
+                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>
+                  Registration ke tests auto-fill ho gaye. Zaroorat ho toh badal
+                  sakte hain.
+                </span>
+              </div>
+            )}
+
             <div>
               <Label>Sample Type</Label>
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger className="mt-1" data-ocid="samples.type.select">
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder="Sample type chunein" />
                 </SelectTrigger>
                 <SelectContent>
                   {SAMPLE_TYPES.map((t) => (
@@ -413,22 +369,30 @@ export default function SampleCollection() {
                 </SelectContent>
               </Select>
             </div>
+
             <div>
-              <Label className="mb-2 block">Tests</Label>
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-auto">
-                {MOCK_TESTS.map((test) => (
-                  <div key={test} className="flex items-center gap-2">
+              <Label className="mb-2 block">
+                Tests{" "}
+                {selectedTests.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {selectedTests.length} selected
+                  </Badge>
+                )}
+              </Label>
+              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border rounded-lg p-2">
+                {SAMPLE_TEST_CATALOG.map((test) => (
+                  <div key={test.code} className="flex items-center gap-2">
                     <Checkbox
-                      id={`test-${test}`}
-                      checked={selectedTests.includes(test)}
-                      onCheckedChange={() => toggleTest(test)}
+                      id={`test-${test.code}`}
+                      checked={selectedTests.includes(test.code)}
+                      onCheckedChange={() => toggleTest(test.code)}
                       data-ocid="samples.test.checkbox"
                     />
                     <Label
-                      htmlFor={`test-${test}`}
-                      className="text-sm cursor-pointer"
+                      htmlFor={`test-${test.code}`}
+                      className="text-xs cursor-pointer leading-tight"
                     >
-                      {test}
+                      {test.name}
                     </Label>
                   </div>
                 ))}
@@ -446,7 +410,9 @@ export default function SampleCollection() {
             <Button
               onClick={handleGenerate}
               disabled={
-                !selectedPatient || selectedTests.length === 0 || !selectedType
+                !selectedPatientLabId ||
+                selectedTests.length === 0 ||
+                !selectedType
               }
               data-ocid="samples.submit_button"
             >

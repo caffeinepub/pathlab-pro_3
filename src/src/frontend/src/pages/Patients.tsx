@@ -45,6 +45,7 @@ import {
   usePatients,
   useTestCatalog,
 } from "../hooks/useQueries";
+import { saveStoredPatient } from "../lib/patientStorage";
 
 // ─── Patient History Dialog ───────────────────────────────────────────────────
 
@@ -327,6 +328,19 @@ export default function Patients() {
 
       const labId = `LAB-${String(patientId).padStart(4, "0")}`;
       setSavedLabId(labId);
+
+      // Save to localStorage for reliable cross-page access
+      saveStoredPatient({
+        labId,
+        name: form.name,
+        age: form.age,
+        gender: String(form.gender),
+        phone: form.phone,
+        address: form.address,
+        doctorName: form.doctorName ?? "",
+        assignedTests: form.selectedTests,
+        registeredAt: Date.now(),
+      });
 
       // If tests were selected, create a report automatically
       if (form.selectedTests.length > 0) {

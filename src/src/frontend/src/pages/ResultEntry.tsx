@@ -11,143 +11,28 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CheckCircle, ChevronDown, ChevronUp, Save } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { SAMPLE_TEST_CATALOG } from "../lib/constants";
+import {
+  type StoredSample,
+  getStoredSamples,
+  saveStoredResults,
+  updateSampleStatus,
+} from "../lib/patientStorage";
 
-interface TestResult {
+interface LiveTestResult {
+  code: string;
   testName: string;
   unit: string;
   referenceRange: string;
   value: string;
 }
 
-interface LabReport {
-  id: string;
-  patientName: string;
-  age: string;
-  gender: string;
-  sampleType: string;
-  collectionDate: string;
-  status: "Pending" | "In-Process" | "Ready for Approval";
-  tests: TestResult[];
+interface LiveReport {
+  sample: StoredSample;
+  tests: LiveTestResult[];
 }
-
-const INITIAL_REPORTS: LabReport[] = [
-  {
-    id: "RPT-001",
-    patientName: "Rahul Sharma",
-    age: "34",
-    gender: "Male",
-    sampleType: "Blood (EDTA)",
-    collectionDate: "2026-03-28",
-    status: "Pending",
-    tests: [
-      {
-        testName: "Hemoglobin",
-        unit: "g/dL",
-        referenceRange: "13.5 - 17.5",
-        value: "",
-      },
-      {
-        testName: "WBC Count",
-        unit: "\u00d710\u00b3/\u00b5L",
-        referenceRange: "4.5 - 11.0",
-        value: "",
-      },
-      {
-        testName: "Platelet Count",
-        unit: "\u00d710\u00b3/\u00b5L",
-        referenceRange: "150 - 400",
-        value: "",
-      },
-      { testName: "MCV", unit: "fL", referenceRange: "80 - 100", value: "" },
-    ],
-  },
-  {
-    id: "RPT-002",
-    patientName: "Priya Patel",
-    age: "28",
-    gender: "Female",
-    sampleType: "Blood (Serum)",
-    collectionDate: "2026-03-28",
-    status: "In-Process",
-    tests: [
-      { testName: "T3", unit: "ng/dL", referenceRange: "80 - 200", value: "" },
-      {
-        testName: "T4",
-        unit: "\u00b5g/dL",
-        referenceRange: "5.1 - 14.1",
-        value: "",
-      },
-      {
-        testName: "TSH",
-        unit: "\u00b5IU/mL",
-        referenceRange: "0.4 - 4.0",
-        value: "",
-      },
-    ],
-  },
-  {
-    id: "RPT-003",
-    patientName: "Amit Kumar",
-    age: "45",
-    gender: "Male",
-    sampleType: "Blood (Serum)",
-    collectionDate: "2026-03-28",
-    status: "Pending",
-    tests: [
-      {
-        testName: "Total Cholesterol",
-        unit: "mg/dL",
-        referenceRange: "< 200",
-        value: "",
-      },
-      { testName: "HDL", unit: "mg/dL", referenceRange: "> 40", value: "" },
-      { testName: "LDL", unit: "mg/dL", referenceRange: "< 100", value: "" },
-      {
-        testName: "Triglycerides",
-        unit: "mg/dL",
-        referenceRange: "< 150",
-        value: "",
-      },
-    ],
-  },
-  {
-    id: "RPT-004",
-    patientName: "Sunita Devi",
-    age: "52",
-    gender: "Female",
-    sampleType: "Blood (Serum)",
-    collectionDate: "2026-03-28",
-    status: "In-Process",
-    tests: [
-      {
-        testName: "SGOT (AST)",
-        unit: "U/L",
-        referenceRange: "10 - 40",
-        value: "",
-      },
-      {
-        testName: "SGPT (ALT)",
-        unit: "U/L",
-        referenceRange: "7 - 56",
-        value: "",
-      },
-      {
-        testName: "Total Bilirubin",
-        unit: "mg/dL",
-        referenceRange: "0.3 - 1.2",
-        value: "",
-      },
-      {
-        testName: "Albumin",
-        unit: "g/dL",
-        referenceRange: "3.5 - 5.0",
-        value: "",
-      },
-    ],
-  },
-];
 
 function parseRange(
   range: string,
@@ -170,21 +55,44 @@ function parseRange(
   return null;
 }
 
+function buildLiveReports(samples: StoredSample[]): LiveReport[] {
+  return samples
+    .filter((s) => s.status !== "Completed")
+    .map((sample) => {
+      const tests: LiveTestResult[] = sample.tests.map((code) => {
+        const catalogEntry = SAMPLE_TEST_CATALOG.find((t) => t.code === code);
+        return {
+          code,
+          testName: catalogEntry ? catalogEntry.name : code,
+          unit: catalogEntry ? catalogEntry.unit : "",
+          referenceRange: catalogEntry ? catalogEntry.referenceRange : "",
+          value: "",
+        };
+      });
+      return { sample, tests };
+    });
+}
+
 export default function ResultEntry() {
-  const [reports, setReports] = useState<LabReport[]>(INITIAL_REPORTS);
+  const [reports, setReports] = useState<LiveReport[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    const samples = getStoredSamples();
+    setReports(buildLiveReports(samples));
+  }, []);
 
   const toggleExpand = (id: string) =>
     setExpanded((prev) => (prev === id ? null : id));
 
   const handleValueChange = (
-    reportId: string,
+    sampleId: string,
     testIdx: number,
     value: string,
   ) => {
     setReports((prev) =>
       prev.map((r) =>
-        r.id !== reportId
+        r.sample.id !== sampleId
           ? r
           : {
               ...r,
@@ -196,23 +104,30 @@ export default function ResultEntry() {
     );
   };
 
-  const handleSave = (report: LabReport) => {
-    toast.success(`Results saved for ${report.patientName}`);
+  const handleSave = (report: LiveReport) => {
+    saveStoredResults(
+      report.tests.map((t) => ({
+        sampleId: report.sample.id,
+        testName: t.testName,
+        unit: t.unit,
+        referenceRange: t.referenceRange,
+        value: t.value,
+      })),
+    );
+    toast.success(`${report.sample.patientName} ke results save ho gaye`);
   };
 
-  const handleMarkReady = (reportId: string) => {
-    setReports((prev) =>
-      prev.map((r) =>
-        r.id === reportId ? { ...r, status: "Ready for Approval" } : r,
-      ),
-    );
-    toast.success("Marked as Ready for Approval");
+  const handleMarkReady = (sampleId: string) => {
+    updateSampleStatus(sampleId, "Completed");
+    setReports((prev) => prev.filter((r) => r.sample.id !== sampleId));
+    toast.success("Approval ke liye ready mark ho gaya");
   };
 
   const statusColor: Record<string, string> = {
     Pending: "bg-amber-100 text-amber-700 border-amber-200",
-    "In-Process": "bg-blue-100 text-blue-700 border-blue-200",
-    "Ready for Approval": "bg-green-100 text-green-700 border-green-200",
+    Collected: "bg-blue-100 text-blue-700 border-blue-200",
+    "In-Process": "bg-purple-100 text-purple-700 border-purple-200",
+    Completed: "bg-green-100 text-green-700 border-green-200",
   };
 
   return (
@@ -220,51 +135,65 @@ export default function ResultEntry() {
       <div>
         <h2 className="text-xl font-bold text-foreground">Result Entry</h2>
         <p className="text-muted-foreground text-sm">
-          Enter test results for pending and in-process samples
+          Sample collection ke baad test results enter karein
         </p>
       </div>
 
-      <div className="space-y-4">
-        {reports
-          .filter((r) => r.status !== "Ready for Approval")
-          .map((report, rIdx) => (
+      {reports.length === 0 ? (
+        <div
+          className="text-center py-16 text-muted-foreground"
+          data-ocid="results.empty_state"
+        >
+          <p className="text-base font-medium mb-1">
+            Koi pending sample nahi hai
+          </p>
+          <p className="text-sm">
+            Sample Collection mein jaayein aur sample collect/in-process mein le
+            aayein
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {reports.map((report, rIdx) => (
             <Card
-              key={report.id}
+              key={report.sample.id}
               className="rounded-xl border border-border shadow-sm"
               data-ocid={`results.item.${rIdx + 1}`}
             >
               <CardHeader
                 className="cursor-pointer select-none px-5 py-4"
-                onClick={() => toggleExpand(report.id)}
+                onClick={() => toggleExpand(report.sample.id)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div>
                       <CardTitle className="text-base">
-                        {report.patientName}
+                        {report.sample.patientName}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        {report.id} · {report.age}y {report.gender} ·{" "}
-                        {report.sampleType}
+                        {report.sample.orderId} · {report.sample.patientLabId} ·{" "}
+                        {report.sample.sampleType}
                       </p>
                     </div>
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusColor[report.status]}`}
+                      className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+                        statusColor[report.sample.status] ?? ""
+                      }`}
                     >
-                      {report.status}
+                      {report.sample.status}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {report.tests.length} tests
                     </span>
                   </div>
-                  {expanded === report.id ? (
+                  {expanded === report.sample.id ? (
                     <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   ) : (
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   )}
                 </div>
               </CardHeader>
-              {expanded === report.id && (
+              {expanded === report.sample.id && (
                 <CardContent className="px-5 pb-5">
                   <Table data-ocid={`results.table.${rIdx + 1}`}>
                     <TableHeader>
@@ -277,7 +206,7 @@ export default function ResultEntry() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {report.tests.map((test) => {
+                      {report.tests.map((test, tIdx) => {
                         const flag = parseRange(
                           test.referenceRange,
                           test.value,
@@ -285,27 +214,27 @@ export default function ResultEntry() {
                         const isAbnormal = flag === "high" || flag === "low";
                         return (
                           <TableRow
-                            key={test.testName}
+                            key={test.code}
                             className={isAbnormal ? "bg-red-50" : ""}
                           >
                             <TableCell className="font-medium text-sm">
                               {test.testName}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {test.referenceRange}
+                              {test.referenceRange || "—"}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {test.unit}
+                              {test.unit || "—"}
                             </TableCell>
                             <TableCell>
                               <Input
                                 className="h-8 w-28 text-sm"
-                                placeholder="Enter value"
+                                placeholder="Value dalein"
                                 value={test.value}
                                 onChange={(e) =>
                                   handleValueChange(
-                                    report.id,
-                                    report.tests.indexOf(test),
+                                    report.sample.id,
+                                    tIdx,
                                     e.target.value,
                                   )
                                 }
@@ -341,64 +270,21 @@ export default function ResultEntry() {
                       onClick={() => handleSave(report)}
                       data-ocid="results.save.button"
                     >
-                      <Save className="h-4 w-4 mr-2" /> Save Results
+                      <Save className="h-4 w-4 mr-2" /> Results Save Karein
                     </Button>
                     <Button
                       className="bg-primary text-primary-foreground"
-                      onClick={() => handleMarkReady(report.id)}
+                      onClick={() => handleMarkReady(report.sample.id)}
                       data-ocid="results.submit_button"
                     >
-                      <CheckCircle className="h-4 w-4 mr-2" /> Mark Ready for
-                      Approval
+                      <CheckCircle className="h-4 w-4 mr-2" /> Approval ke liye
+                      Ready
                     </Button>
                   </div>
                 </CardContent>
               )}
             </Card>
           ))}
-        {reports.filter((r) => r.status !== "Ready for Approval").length ===
-          0 && (
-          <div
-            className="text-center py-16 text-muted-foreground"
-            data-ocid="results.empty_state"
-          >
-            All reports are ready for approval
-          </div>
-        )}
-      </div>
-
-      {reports.some((r) => r.status === "Ready for Approval") && (
-        <div>
-          <h3 className="text-base font-semibold mb-3 text-foreground">
-            Ready for Approval
-          </h3>
-          <div className="space-y-3">
-            {reports
-              .filter((r) => r.status === "Ready for Approval")
-              .map((report, rIdx) => (
-                <Card
-                  key={report.id}
-                  className="rounded-xl border border-green-200 bg-green-50"
-                  data-ocid={`results.approved.item.${rIdx + 1}`}
-                >
-                  <CardContent className="px-5 py-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-sm">
-                          {report.patientName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {report.id} · {report.tests.length} tests
-                        </p>
-                      </div>
-                      <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-green-100 text-green-700 border-green-200">
-                        Ready for Approval
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
         </div>
       )}
     </div>
