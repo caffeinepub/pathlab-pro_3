@@ -171,7 +171,86 @@ export default function ResultEntry() {
     );
   };
 
+  // Sync results from pathlab_results into pathlab_reports so print view shows them
+  const syncToLocalDB = (report: LabReport) => {
+    try {
+      const dbReports: {
+        id: number;
+        patientId: number;
+        status: string;
+        tests: string[];
+        results: {
+          code?: string;
+          testCode?: string;
+          testName: string;
+          value: string;
+          unit: string;
+          referenceRange: string;
+          result?: string;
+        }[];
+        notes: string;
+        doctorName: string;
+        createdAt: number;
+        completedAt?: number;
+      }[] = JSON.parse(localStorage.getItem("pathlab_reports") || "[]");
+      const patients: { id: number; patient: { name: string } }[] = JSON.parse(
+        localStorage.getItem("pathlab_patients") || "[]",
+      );
+      // Find patient by name
+      const patient = patients.find(
+        (p) =>
+          p.patient.name.toLowerCase().trim() ===
+          report.patientName.toLowerCase().trim(),
+      );
+      if (!patient) return;
+      const mapped = report.tests.map((t) => ({
+        code: t.testCode,
+        testCode: t.testCode,
+        testName: t.testName,
+        value: t.value,
+        unit: t.unit,
+        referenceRange: t.referenceRange,
+        result: t.value,
+      }));
+      const allHaveValues =
+        report.tests.length > 0 &&
+        report.tests.every((t) => t.value && t.value.trim() !== "");
+      // Find matching report for this patient
+      let matched = false;
+      const updated = dbReports.map((r) => {
+        if (r.patientId === patient.id) {
+          matched = true;
+          return {
+            ...r,
+            results: mapped,
+            status: allHaveValues ? "completed" : r.status,
+            completedAt: allHaveValues ? Date.now() : r.completedAt,
+          };
+        }
+        return r;
+      });
+      if (!matched) {
+        // Create a new report entry
+        updated.push({
+          id: Date.now(),
+          patientId: patient.id,
+          status: allHaveValues ? "completed" : "pending",
+          tests: report.tests.map((t) => t.testCode),
+          results: mapped,
+          notes: "",
+          doctorName: "",
+          createdAt: Date.now(),
+          completedAt: allHaveValues ? Date.now() : undefined,
+        });
+      }
+      localStorage.setItem("pathlab_reports", JSON.stringify(updated));
+    } catch (e) {
+      console.error("syncToLocalDB failed", e);
+    }
+  };
+
   const handleSave = (report: LabReport) => {
+    syncToLocalDB(report);
     toast.success(`Results saved for ${report.patientName}`);
   };
 

@@ -320,7 +320,53 @@ function ReportViewDialog({
     year: "numeric",
   });
 
-  const hasResults = report.results && report.results.length > 0;
+  // Also check pathlab_results by patient name as fallback
+  const extraResults: {
+    testCode?: string;
+    code?: string;
+    result?: string;
+    value?: string;
+    unit?: string;
+    referenceRange?: string;
+  }[] = (() => {
+    if (report.results && report.results.length > 0) return [];
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("pathlab_results") || "[]",
+      ) as {
+        patientName: string;
+        tests: {
+          testCode: string;
+          testName: string;
+          value: string;
+          unit: string;
+          referenceRange: string;
+        }[];
+      }[];
+      const match = saved.find(
+        (r) =>
+          r.patientName.toLowerCase().trim() ===
+          patient.patient.name.toLowerCase().trim(),
+      );
+      if (match)
+        return match.tests.map((t) => ({
+          testCode: t.testCode,
+          code: t.testCode,
+          result: t.value,
+          value: t.value,
+          unit: t.unit,
+          referenceRange: t.referenceRange,
+        }));
+    } catch {}
+    return [];
+  })();
+  const allResults =
+    report.results && report.results.length > 0 ? report.results : extraResults;
+  const hasResults =
+    allResults.length > 0 &&
+    allResults.some(
+      (r) => (r.result || (r as { value?: string }).value || "").trim() !== "",
+    );
 
   const handlePrint = () => {
     const printContent = document.getElementById("report-print")?.innerHTML;
@@ -445,7 +491,11 @@ function ReportViewDialog({
               </thead>
               <tbody>
                 {report.tests.map((code, i) => {
-                  const result = report.results.find((r) => r.code === code);
+                  const result = allResults.find(
+                    (r) =>
+                      r.code === code ||
+                      (r as { testCode?: string }).testCode === code,
+                  );
                   const test = catalog?.find((t) => t.code === code);
                   return (
                     <tr
@@ -455,9 +505,12 @@ function ReportViewDialog({
                       <td className="py-2 px-3 font-mono text-xs">{code}</td>
                       <td className="py-2 px-3">{test?.name || code}</td>
                       <td className="py-2 px-3 font-semibold">
-                        {result?.result || (
-                          <span className="text-gray-400 italic">Pending</span>
-                        )}
+                        {result?.result ||
+                          (result as { value?: string } | undefined)?.value || (
+                            <span className="text-gray-400 italic">
+                              Pending
+                            </span>
+                          )}
                       </td>
                       <td className="py-2 px-3 text-gray-600">
                         {result?.unit || test?.unit || "—"}
